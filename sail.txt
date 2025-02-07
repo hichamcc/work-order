@@ -19,3 +19,16 @@ sail logs
 
 # Run tests
 sail test
+
+
+sail artisan migrate
+sail artisan db:seed
+
+sudo chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+
+sail artisan storage:link
+
+sail artisan config:cache
+sail artisan route:cache
+sail artisan view:cache

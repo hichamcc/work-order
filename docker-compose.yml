@@ -1,5 +1,10 @@
 services:
     laravel.test:
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.50'   # Use 50% of CPU
+                    memory: 512M   # Limit memory usage
         build:
             context: './vendor/laravel/sail/runtimes/8.4'
             dockerfile: Dockerfile
