@@ -29,6 +29,8 @@ $register = function () {
     $validated = $this->validate();
 
     $validated['password'] = Hash::make($validated['password']);
+    $validated['role_id'] = Role::where('slug', 'worker')->first()->id; // Default to worker role
+
 
     event(new Registered($user = User::create($validated)));
 
