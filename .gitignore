@@ -21,3 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/docker/
+.env.sail
+.DS_Store
+*/.DS_Store
+**/.DS_Store

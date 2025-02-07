@@ -1,0 +1,21 @@
+# Start containers
+sail up -d
+
+# Stop containers
+sail down
+
+# Run migrations
+sail artisan migrate
+
+# Run NPM commands
+sail npm install
+sail npm run dev
+
+# Access MySQL
+sail mysql
+
+# View logs
+sail logs
+
+# Run tests
+sail test
