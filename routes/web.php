@@ -58,7 +58,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/work-orders/{workOrder}/assign', [WorkOrderController::class, 'assign'])
             ->name('work-orders.assign');
         Route::patch('/work-orders/{workOrder}/status', [WorkOrderController::class, 'updateStatus'])
-            ->name('work-orders.status');
+            ->name('work-orders.update-status');
     
         // Service Templates
         Route::resource('service-templates', ServiceTemplateController::class);
