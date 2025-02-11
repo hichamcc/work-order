@@ -90,14 +90,14 @@
                         Add New User
                     </a>
 
-                    <a href="#" class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-center">
+                    <a href="{{ route('admin.work-orders.create') }}" class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-center">
                         <svg class="h-6 w-6 text-indigo-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                         </svg>
                         Create Work Order
                     </a>
 
-                    <a href="#" class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-center">
+                    <a href="{{ route('admin.service-templates.create') }}" class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-center">
                         <svg class="h-6 w-6 text-indigo-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
@@ -118,7 +118,6 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
                                 <tr>
-                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -128,14 +127,12 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($recentWorkOrders ?? [] as $workOrder)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            #{{ $workOrder->id }}
-                                        </td>
+                                      
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {{ $workOrder->title }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $workOrder->assigned_to }}
+                                            {{ $workOrder->assignedTo->name }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

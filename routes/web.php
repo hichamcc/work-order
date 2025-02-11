@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WorkOrderController;
 use App\Http\Controllers\Admin\ServiceTemplateController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\PartController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\Settings\CategoryController;
 
@@ -76,6 +77,28 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/work-orders', [ReportController::class, 'workOrders'])->name('reports.work-orders');
         Route::get('/reports/workers', [ReportController::class, 'workers'])->name('reports.workers');
         Route::get('/reports/export/{type}', [ReportController::class, 'export'])->name('reports.export');
+   
+           // Parts Management
+        Route::resource('parts', PartController::class);
+        
+        // Additional Parts Routes
+        Route::prefix('parts')->name('parts.')->group(function () {
+            Route::get('{part}/stock-history', [PartController::class, 'stockHistory'])
+            ->name('stock-history');
+            Route::patch('{part}/toggle-status', [PartController::class, 'toggleStatus'])
+                ->name('toggle-status');
+                
+            Route::patch('{part}/adjust-stock', [PartController::class, 'adjustStock'])
+                ->name('adjust-stock');
+          
+                
+            Route::get('export', [PartController::class, 'export'])
+                ->name('export');
+
+        });
+   
+   
+   
     });
     
 

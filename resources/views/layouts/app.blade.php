@@ -13,6 +13,7 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @livewireStyles
 
         <!-- Alpine.js Plugins -->
         <script defer src="https://unpkg.com/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
@@ -59,5 +60,10 @@
                 {{ session('error') }}
             </div>
         @endif
+        @livewireScripts
+
+        <livewire:wire-elements-modal />
+
+
     </body>
 </html>

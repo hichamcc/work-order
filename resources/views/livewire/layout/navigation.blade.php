@@ -41,6 +41,10 @@ $logout = function (Logout $logout) {
                             {{ __('Service Templates') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('admin.parts.index')" :active="request()->routeIs('admin.parts.*')" wire:navigate>
+                            {{ __('Parts') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('admin.reports')" :active="request()->routeIs('admin.reports')" wire:navigate>
                             {{ __('Reports') }}
                         </x-nav-link>
