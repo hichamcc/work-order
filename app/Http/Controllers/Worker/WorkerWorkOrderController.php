@@ -10,7 +10,7 @@ use App\Models\Part;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class WorkOrderController extends Controller
+class WorkerWorkOrderController extends Controller
 {
     public function index()
     {

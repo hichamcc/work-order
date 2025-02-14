@@ -79,20 +79,20 @@ $logout = function (Logout $logout) {
                             </div>
                         </div>
                     @else
-                        {{-- Worker Navigation Links --}}
+                    {{-- Worker Navigation Links --}}
                         <x-nav-link :href="route('worker.dashboard')" :active="request()->routeIs('worker.dashboard')" wire:navigate>
                             {{ __('Dashboard') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('worker.work-orders')" :active="request()->routeIs('worker.work-orders')" wire:navigate>
+                        <x-nav-link :href="route('worker.work-orders.index')" :active="request()->routeIs('worker.work-orders.*')" wire:navigate>
                             {{ __('My Work Orders') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('worker.time-tracking')" :active="request()->routeIs('worker.time-tracking')" wire:navigate>
+                        <x-nav-link :href="route('worker.work-orders.time')" :active="request()->routeIs('worker.work-orders.time')" wire:navigate>
                             {{ __('Time Tracking') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('worker.completed-orders')" :active="request()->routeIs('worker.completed-orders')" wire:navigate>
+                        <x-nav-link :href="route('worker.work-orders.completed')" :active="request()->routeIs('worker.work-orders.completed')" wire:navigate>
                             {{ __('Completed Orders') }}
                         </x-nav-link>
                     @endif
@@ -177,21 +177,21 @@ $logout = function (Logout $logout) {
                     <!-- Add more settings links here -->
                 </div>
             @else
-                <x-responsive-nav-link :href="route('worker.dashboard')" :active="request()->routeIs('worker.dashboard')" wire:navigate>
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('worker.dashboard')" :active="request()->routeIs('worker.dashboard')" wire:navigate>
+                {{ __('Dashboard') }}
+            </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('worker.work-orders')" :active="request()->routeIs('worker.work-orders')" wire:navigate>
-                    {{ __('My Work Orders') }}
-                </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('worker.work-orders.index')" :active="request()->routeIs('worker.work-orders.*')" wire:navigate>
+                {{ __('My Work Orders') }}
+            </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('worker.time-tracking')" :active="request()->routeIs('worker.time-tracking')" wire:navigate>
-                    {{ __('Time Tracking') }}
-                </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('worker.work-orders.time')" :active="request()->routeIs('worker.work-orders.time')" wire:navigate>
+                {{ __('Time Tracking') }}
+            </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('worker.completed-orders')" :active="request()->routeIs('worker.completed-orders')" wire:navigate>
-                    {{ __('Completed Orders') }}
-                </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('worker.work-orders.completed')" :active="request()->routeIs('worker.work-orders.completed')" wire:navigate>
+                {{ __('Completed Orders') }}
+            </x-responsive-nav-link>
             @endif
         </div>
 

@@ -11,6 +11,12 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\PartController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\Settings\CategoryController;
+use App\Http\Controllers\Worker\WorkerDashboardController;
+use App\Http\Controllers\Worker\WorkerWorkOrderController;
+use App\Http\Controllers\Worker\WorkOrderTimeController;
+use App\Http\Controllers\Worker\WorkOrderPartController;
+use App\Http\Controllers\Worker\WorkOrderPhotoController;
+use App\Http\Controllers\Worker\WorkOrderCommentController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -123,20 +129,47 @@ Route::middleware(['auth'])->group(function () {
 
     // Worker routes
     Route::middleware(['role:worker'])->prefix('worker')->name('worker.')->group(function () {
-        // Worker Dashboard
-        Route::get('/dashboard', function () {
-            return view('worker.dashboard');
-        })->name('dashboard');
-
-            //Route::get('/work-orders', [WorkerWorkOrderController::class, 'index'])->name('work-orders');
-            //Route::get('/time-tracking', [WorkerTimeTrackingController::class, 'index'])->name('time-tracking');
-            //Route::get('/completed-orders', [WorkerWorkOrderController::class, 'completed'])->name('completed-orders');
+       // Dashboard
+            Route::get('/dashboard', [WorkerDashboardController::class, 'index'])->name('dashboard');
 
 
-        // Future routes for worker features will go here
-        // Assigned Work Orders routes
-        // Time Tracking routes
-        // Parts Usage routes
+            Route::controller(WorkOrderController::class)->group(function () {
+                Route::get('/work-orders', 'index')->name('work-orders.index');
+                Route::get('/work-orders/time', 'timeTracking')->name('work-orders.time');
+                Route::get('/work-orders/completed', 'completed')->name('work-orders.completed');
+                Route::get('/work-orders/{workOrder}', 'show')->name('work-orders.show');
+            });
+
+            // Work Orders
+            Route::controller(WorkerWorkOrderController::class)->group(function () {
+                Route::get('/work-orders', 'index')->name('work-orders.index');
+                Route::get('/work-orders/{workOrder}', 'show')->name('work-orders.show');
+            });
+
+            // Work Order Time Tracking
+            Route::controller(WorkOrderTimeController::class)->group(function () {
+                Route::post('/work-orders/{workOrder}/start', 'startWork')->name('work-orders.start');
+                Route::post('/work-orders/{workOrder}/pause', 'pauseWork')->name('work-orders.pause');
+            });
+
+            // Work Order Parts
+            Route::controller(WorkOrderPartController::class)->group(function () {
+                Route::post('/work-orders/{workOrder}/parts', 'store')->name('work-orders.parts.store');
+            });
+
+            // Work Order Photos
+            Route::controller(WorkOrderPhotoController::class)->group(function () {
+                Route::post('/work-orders/{workOrder}/photos', 'store')->name('work-orders.photos.store');
+            });
+
+            // Work Order Comments
+            Route::controller(WorkOrderCommentController::class)->group(function () {
+                Route::post('/work-orders/{workOrder}/comments', 'store')->name('work-orders.comments.store');
+            });
+
+   
+
+     
     });
 });
 
