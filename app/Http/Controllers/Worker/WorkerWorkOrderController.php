@@ -16,7 +16,7 @@ class WorkerWorkOrderController extends Controller
     {
         $workOrders = WorkOrder::with(['serviceTemplate', 'checklistItems'])
             ->where('assigned_to', auth()->id())
-            ->whereIn('status', ['new', 'in_progress', 'on_hold'])
+            ->whereIn('status', ['new', 'in_progress', 'on_hold','completed'])
             ->withCount(['checklistItems', 'checklistItems as completed_items_count' => function ($query) {
                 $query->where('is_completed', true);
             }])
