@@ -73,7 +73,7 @@
                                     <p class="ml-2 text-sm text-gray-500">Started {{ $activeTime->started_at->diffForHumans() }}</p>
                                 </div>
                             </div>
-                            <form action="{{ route('worker.work-orders.pause', $activeTime->workOrder) }}" method="POST">
+                            <form action="{{ route('worker.work-orders.pause-work', $activeTime->workOrder) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-600 focus:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,14 +182,14 @@
                                         </div>
                                         <div class="text-right">
                                             <span class="text-xs font-semibold inline-block text-indigo-600">
-                                                {{ $order->completed_items_count }}/{{ $order->checklistItems_count }} Items
+                                                {{ $order->completed_items_count }}/{{ $order->checklist_items_count }} Items
                                             </span>
                                         </div>
                                     </div>
                                     <div class="overflow-hidden h-2 text-xs flex rounded bg-indigo-200">
                                         @php
-                                        $progress = $order->checklistItems_count > 0 
-                                                ? ($order->completed_items_count / $order->checklistItems_count) * 100 
+                                        $progress = $order->checklist_items_count > 0 
+                                                ? ($order->completed_items_count / $order->checklist_items_count) * 100 
                                                 : 0;
                                         @endphp
                                         <div style="width: {{ $progress }}%" 
