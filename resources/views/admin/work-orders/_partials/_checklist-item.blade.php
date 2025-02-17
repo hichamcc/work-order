@@ -28,15 +28,31 @@
         @endif
 
         @if($item->photos->count() > 0)
-            <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 @foreach($item->photos as $photo)
-                    <a href="{{ Storage::url($photo->file_path) }}" 
-                       target="_blank" 
-                       class="block aspect-w-3 aspect-h-2">
-                        <img src="{{ Storage::url($photo->file_path) }}" 
-                             alt="Photo" 
-                             class="object-cover rounded-lg">
-                    </a>
+                    <div class="relative group">
+                        <div class="aspect-w-4 aspect-h-3 w-full overflow-hidden rounded-lg bg-gray-100">
+                            <img src="{{ Storage::url($photo->file_path) }}" 
+                                 alt="Checklist item photo"
+                                 class="h-full w-full object-cover">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all">
+                                <a href="{{ Storage::url($photo->file_path) }}" 
+                                   target="_blank"
+                                   class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <span class="bg-white bg-opacity-75 rounded-full p-2">
+                                        <svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                                        </svg>
+                                    </span>
+                                </a>
+                            </div>
+                        </div>
+                        @if($photo->file_name)
+                            <div class="mt-1 text-xs text-gray-500 truncate">
+                                {{ $photo->file_name }}
+                            </div>
+                        @endif
+                    </div>
                 @endforeach
             </div>
         @endif

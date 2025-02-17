@@ -136,17 +136,31 @@
                                     </div>
 
                                     <div class="ml-4 flex-shrink-0 flex items-center space-x-2">
-                                        @if($workOrder->status === 'new')
-                                            <form action="{{ route('worker.work-orders.start', $workOrder) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                                    @if($workOrder->status !== 'completed')
+                                        <div class="flex items-center space-x-4">
+                                            @if(!$activeTimings->contains($workOrder->id))
+                                                <a href="{{ route('worker.work-orders.time-tracking', $workOrder) }}" 
+                                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                                    </svg>
                                                     Start Work
-                                                </button>
-                                            </form>
-                                        @endif
+                                                </a>
+                                            @else
+                                                <a href="{{ route('worker.work-orders.time-tracking', $workOrder) }}" 
+                                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V5z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    In Progress...
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endif
                                         <a href="{{ route('worker.work-orders.show', $workOrder) }}" 
                                            class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                                            Details
+                                            Details & progress
                                         </a>
                                     </div>
                                 </div>

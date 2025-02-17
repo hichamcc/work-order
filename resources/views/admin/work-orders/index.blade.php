@@ -100,9 +100,10 @@
                                         <div class="relative pt-1">
                                             <div class="overflow-hidden h-2 text-xs flex rounded bg-indigo-200">
                                                 @php
-                                                    $progress = $workOrder->checklistItems_count > 0 
-                                                        ? ($workOrder->completed_items_count / $workOrder->checklistItems_count) * 100 
+                                                    $progress = $workOrder->checklist_items_count > 0 
+                                                        ? ($workOrder->completed_items_count / $workOrder->checklist_items_count) * 100 
                                                         : 0;
+                                                        
                                                 @endphp
                                                 <div style="width: {{ $progress }}%" 
                                                      class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500">
@@ -136,7 +137,7 @@
                                             </a>
 
                                             <a href="{{ route('admin.work-orders.edit', $workOrder) }}" 
-                                               class="text-indigo-600 hover:text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-3 py-1 rounded-md">
+                                               class="text-orange-600 hover:text-orange-900 bg-orange-100 hover:bg-orange-200 px-3 py-1 rounded-md">
                                                 Edit
                                             </a>
 

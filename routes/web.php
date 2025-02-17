@@ -145,12 +145,20 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/work-orders', 'index')->name('work-orders.index');
                 Route::get('/work-orders/{workOrder}', 'show')->name('work-orders.show');
             });
-
+         
             // Work Order Time Tracking
             Route::controller(WorkOrderTimeController::class)->group(function () {
-                Route::post('/work-orders/{workOrder}/start', 'startWork')->name('work-orders.start');
-                Route::post('/work-orders/{workOrder}/pause', 'pauseWork')->name('work-orders.pause');
+                Route::post('/work-orders/{workOrder}/start', 'startWork')->name('work-orders.start-work');
+                Route::post('/work-orders/{workOrder}/pause', 'pauseWork')->name('work-orders.pause-work');
+                Route::get('/work-orders/{workOrder}/time-tracking',  'timeTrackingView')->name('work-orders.time-tracking');
             });
+
+
+            Route::patch('/{workOrder}/update-status', [WorkerWorkOrderController::class, 'updateStatus'])->name('work-orders.update-status');
+            Route::patch('/{workOrder}/checklist-items/{checklistItemId}', [WorkerWorkOrderController::class, 'updateChecklistItem'])->name('work-orders.update-checklist-item');
+            Route::post('/{workOrder}/parts', [WorkerWorkOrderController::class, 'addPart'])->name('work-orders.add-part');
+            Route::post('/{workOrder}/comments', [WorkerWorkOrderController::class, 'addComment'])->name('work-orders.add-comment');
+        
 
             // Work Order Parts
             Route::controller(WorkOrderPartController::class)->group(function () {

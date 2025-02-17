@@ -22,8 +22,14 @@ class WorkerWorkOrderController extends Controller
             }])
             ->latest()
             ->paginate(10);
-
-        return view('worker.work-orders.index', compact('workOrders'));
+    
+        // Get active timings for each work order
+        $activeTimings = WorkOrderTime::whereIn('work_order_id', $workOrders->pluck('id'))
+            ->where('user_id', auth()->id())
+            ->whereNull('ended_at')
+            ->pluck('work_order_id');
+    
+        return view('worker.work-orders.index', compact('workOrders', 'activeTimings'));
     }
 
     public function show(WorkOrder $workOrder)
@@ -133,40 +139,43 @@ class WorkerWorkOrderController extends Controller
         if ($workOrder->assigned_to !== auth()->id()) {
             abort(403);
         }
-
+    
         $validated = $request->validate([
             'is_completed' => 'required|boolean',
             'notes' => 'nullable|string',
             'photos.*' => 'nullable|image|max:5120', // 5MB max
         ]);
-
+    
         try {
             DB::beginTransaction();
-
-            $checklistItem = $workOrder->checklistItems()->findOrFail($checklistItemId);
+    
+            // First, find the WorkOrderChecklistItem (not ChecklistItem)
+            $workOrderChecklistItem = $workOrder->checklistItems()->findOrFail($checklistItemId);
             
-            $checklistItem->update([
+            $workOrderChecklistItem->update([
                 'is_completed' => $validated['is_completed'],
                 'completed_at' => $validated['is_completed'] ? now() : null,
                 'completed_by' => $validated['is_completed'] ? auth()->id() : null,
                 'notes' => $validated['notes'],
             ]);
-
+    
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photo) {
                     $path = $photo->store('work-orders/' . $workOrder->id, 'public');
                     
                     $workOrder->photos()->create([
-                        'checklist_item_id' => $checklistItem->id,
+                        'work_order_id' => $workOrder->id,
+                        'checklist_item_id' => $workOrderChecklistItem->id, // Changed to match model
                         'file_path' => $path,
                         'file_name' => $photo->getClientOriginalName(),
                         'mime_type' => $photo->getMimeType(),
                         'file_size' => $photo->getSize(),
                         'uploaded_by' => auth()->id(),
+                        'description' => $request->input('description', null), // Optional description
                     ]);
                 }
             }
-
+    
             DB::commit();
             return back()->with('success', 'Checklist item updated successfully.');
             
@@ -185,7 +194,7 @@ class WorkerWorkOrderController extends Controller
         $validated = $request->validate([
             'part_id' => 'required|exists:parts,id',
             'quantity' => 'required|integer|min:1',
-            'notes' => 'nullable|string',
+            
         ]);
 
         $part = Part::findOrFail($validated['part_id']);
@@ -194,7 +203,7 @@ class WorkerWorkOrderController extends Controller
             'part_id' => $validated['part_id'],
             'quantity' => $validated['quantity'],
             'cost_at_time' => $part->cost,
-            'notes' => $validated['notes'],
+            
         ]);
 
         return back()->with('success', 'Part added successfully.');

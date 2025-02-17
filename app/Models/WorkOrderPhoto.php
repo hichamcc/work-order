@@ -24,7 +24,7 @@ class WorkOrderPhoto extends Model
 
     public function checklistItem()
     {
-        return $this->belongsTo(ChecklistItem::class);
+        return $this->belongsTo(WorkOrderChecklistItem::class);
     }
 
     public function uploader()

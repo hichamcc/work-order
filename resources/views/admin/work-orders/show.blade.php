@@ -252,7 +252,7 @@
                                                 <div class="text-sm text-gray-900">{{ $time->user->name }}</div>
                                                 <div class="text-sm text-gray-500">
                                                     @if($time->ended_at)
-                                                        {{ $time->started_at->diffForHumans($time->ended_at, ['parts' => 2]) }}
+                                                        {{ $time->started_at->diffForHumans($time->ended_at, \Carbon\CarbonInterface::DIFF_ABSOLUTE, ['parts' => 3]) }}
                                                     @else
                                                         In Progress
                                                     @endif
@@ -260,9 +260,7 @@
                                             </div>
                                             <div class="text-xs text-gray-500 mt-1">
                                                 {{ $time->started_at->format('M d, Y H:i') }}
-                                                @if($time->ended_at)
-                                                    - {{ $time->ended_at->format('M d, Y H:i') }}
-                                                @endif
+                                               
                                             </div>
                                             @if($time->notes)
                                                 <div class="text-sm text-gray-600 mt-2">

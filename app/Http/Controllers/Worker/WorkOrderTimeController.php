@@ -3,63 +3,83 @@
 namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
+
+use App\Models\WorkOrder;
+use App\Models\WorkOrderTime;
 use Illuminate\Http\Request;
 
 class WorkOrderTimeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function startWork(WorkOrder $workOrder)
     {
-        //
+        // Check if work order is assigned to current user
+        if ($workOrder->assigned_to !== auth()->id()) {
+            return back()->with('error', 'You are not assigned to this work order.');
+        }
+
+        // Check if there's already an active timing
+        $activeTiming = $workOrder->times()
+            ->where('user_id', auth()->id())
+            ->whereNull('ended_at')
+            ->exists();
+
+        if ($activeTiming) {
+            return back()->with('error', 'You already have an active timing for this work order.');
+        }
+
+        // Update work order status if it's new
+        if ($workOrder->status === 'new') {
+            $workOrder->update([
+                'status' => 'in_progress',
+                'started_at' => now(),
+            ]);
+        }
+
+        // Create new timing record
+        WorkOrderTime::create([
+            'work_order_id' => $workOrder->id,
+            'user_id' => auth()->id(),
+            'started_at' => now(),
+        ]);
+
+        return back()->with('success', 'Work timer started successfully.');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function pauseWork(WorkOrder $workOrder)
     {
-        //
+        // Check if work order is assigned to current user
+        if ($workOrder->assigned_to !== auth()->id()) {
+            return back()->with('error', 'You are not assigned to this work order.');
+        }
+
+        // Find and end active timing
+        $activeTiming = $workOrder->times()
+            ->where('user_id', auth()->id())
+            ->whereNull('ended_at')
+            ->first();
+
+        if (!$activeTiming) {
+            return back()->with('error', 'No active timing found.');
+        }
+
+        $activeTiming->update([
+            'ended_at' => now(),
+        ]);
+
+        return back()->with('success', 'Work timer paused successfully.');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function timeTrackingView(WorkOrder $workOrder)
     {
-        //
-    }
+        if ($workOrder->assigned_to !== auth()->id()) {
+            abort(403, 'You are not assigned to this work order.');
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $activeTiming = $workOrder->times()
+            ->where('user_id', auth()->id())
+            ->whereNull('ended_at')
+            ->first();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return view('worker.work-orders.time-tracking', compact('workOrder', 'activeTiming'));
     }
 }

@@ -157,7 +157,7 @@
                                 </div>
                                 <div class="ml-4 flex-shrink-0 flex items-center space-x-2">
                                         @if($order->status === 'new')
-                                            <form action="{{ route('worker.work-orders.start', $order) }}" method="POST">
+                                            <form action="{{ route('worker.work-orders.start-work', $order) }}" method="POST">
                                                 @csrf
                                                 <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                                                     Start Work
@@ -166,7 +166,7 @@
                                         @endif
                                         <a href="{{ route('worker.work-orders.show', $order) }}" 
                                         class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                                            Details
+                                            Details & progress
                                         </a>
                                     </div>
 
