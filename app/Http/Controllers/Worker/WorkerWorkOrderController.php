@@ -6,30 +6,83 @@ use App\Http\Controllers\Controller;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderTime;
 use App\Models\WorkOrderPart;
+use App\Models\StockAdjustment;
 use App\Models\Part;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class WorkerWorkOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $workOrders = WorkOrder::with(['serviceTemplate', 'checklistItems'])
-            ->where('assigned_to', auth()->id())
-            ->whereIn('status', ['new', 'in_progress', 'on_hold','completed'])
-            ->withCount(['checklistItems', 'checklistItems as completed_items_count' => function ($query) {
-                $query->where('is_completed', true);
-            }])
-            ->latest()
-            ->paginate(10);
+        $query = WorkOrder::with(['serviceTemplate', 'checklistItems'])
+            ->where('assigned_to', auth()->id());
     
-        // Get active timings for each work order
+        // Status Filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        } else {
+            $query->whereIn('status', ['new', 'in_progress', 'on_hold', 'completed']);
+        }
+    
+        // Priority Filter
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+    
+        // Date Range Filter
+        if ($request->filled('date_range')) {
+            switch ($request->date_range) {
+                case 'today':
+                    $query->whereDate('created_at', Carbon::today());
+                    break;
+                case 'week':
+                    $query->whereBetween('created_at', [
+                        Carbon::now()->startOfWeek(),
+                        Carbon::now()->endOfWeek()
+                    ]);
+                    break;
+                case 'month':
+                    $query->whereBetween('created_at', [
+                        Carbon::now()->startOfMonth(),
+                        Carbon::now()->endOfMonth()
+                    ]);
+                    break;
+            }
+        }
+    
+        $workOrders = $query->withCount([
+                'checklistItems', 
+                'checklistItems as completed_items_count' => function ($query) {
+                    $query->where('is_completed', true);
+                }
+            ])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+    
+        // Get active timings
         $activeTimings = WorkOrderTime::whereIn('work_order_id', $workOrders->pluck('id'))
             ->where('user_id', auth()->id())
             ->whereNull('ended_at')
             ->pluck('work_order_id');
     
-        return view('worker.work-orders.index', compact('workOrders', 'activeTimings'));
+        // Get lists for filters
+        $statuses = ['new', 'in_progress', 'on_hold', 'completed'];
+        $priorities = ['low', 'medium', 'high'];
+        $dateRanges = [
+            'today' => 'Today',
+            'week' => 'This Week',
+            'month' => 'This Month'
+        ];
+    
+        return view('worker.work-orders.index', compact(
+            'workOrders', 
+            'activeTimings',
+            'statuses',
+            'priorities',
+            'dateRanges'
+        ));
     }
 
     public function show(WorkOrder $workOrder)
@@ -190,23 +243,54 @@ class WorkerWorkOrderController extends Controller
         if ($workOrder->assigned_to !== auth()->id()) {
             abort(403);
         }
-
+    
         $validated = $request->validate([
             'part_id' => 'required|exists:parts,id',
             'quantity' => 'required|integer|min:1',
-            
         ]);
-
-        $part = Part::findOrFail($validated['part_id']);
-
-        $workOrder->parts()->create([
-            'part_id' => $validated['part_id'],
-            'quantity' => $validated['quantity'],
-            'cost_at_time' => $part->cost,
-            
-        ]);
-
-        return back()->with('success', 'Part added successfully.');
+    
+        try {
+            DB::beginTransaction();
+    
+            $part = Part::findOrFail($validated['part_id']);
+    
+            // Check if enough stock is available
+            if ($part->stock < $validated['quantity']) {
+                return back()->with('error', 'Not enough stock available. Current stock: ' . $part->stock);
+            }
+    
+            // Create work order part record
+            $workOrder->parts()->create([
+                'part_id' => $validated['part_id'],
+                'quantity' => $validated['quantity'],
+                'cost_at_time' => $part->cost,
+            ]);
+    
+            // Generate automatic note
+            $note = "Used in Work Order #{$workOrder->id} - {$workOrder->title}";
+    
+            // Create stock adjustment record
+            $part->stockAdjustments()->create([
+                'adjusted_by' => auth()->id(),
+                'previous_stock' => $part->stock,
+                'new_stock' => $part->stock - $validated['quantity'],
+                'adjustment_quantity' => -$validated['quantity'],
+                'adjustment_type' => 'remove',
+                'notes' => $note,
+            ]);
+    
+            // Update part stock
+            $part->update([
+                'stock' => $part->stock - $validated['quantity']
+            ]);
+    
+            DB::commit();
+            return back()->with('success', 'Part added successfully.');
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error adding part: ' . $e->getMessage());
+        }
     }
 
     public function addComment(Request $request, WorkOrder $workOrder)

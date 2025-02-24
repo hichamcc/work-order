@@ -65,4 +65,5 @@ class WorkOrder extends Model
     {
         return $this->hasMany(WorkOrderComment::class);
     }
+
 }

@@ -91,7 +91,7 @@
                                             @if($workOrder->due_date)
                                                 <span class="inline-flex items-center text-xs text-gray-500">
                                                     Due: {{ $workOrder->due_date->format('M d, Y') }}
-                                                    @if($workOrder->due_date->isPast())
+                                                    @if($workOrder->due_date->isPast() && $workOrder->status !== 'completed' )
                                                         <span class="ml-1 text-red-600 font-medium">Overdue</span>
                                                     @elseif($workOrder->due_date->isToday())
                                                         <span class="ml-1 text-yellow-600 font-medium">Due Today</span>

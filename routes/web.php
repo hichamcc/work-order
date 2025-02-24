@@ -79,10 +79,9 @@ Route::middleware(['auth'])->group(function () {
             ->name('service-templates.versions');
     
         // Reports
-        Route::get('/reports', [ReportController::class, 'index'])->name('reports');
-        Route::get('/reports/work-orders', [ReportController::class, 'workOrders'])->name('reports.work-orders');
-        Route::get('/reports/workers', [ReportController::class, 'workers'])->name('reports.workers');
-        Route::get('/reports/export/{type}', [ReportController::class, 'export'])->name('reports.export');
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [ReportController::class, 'exportWorkOrders'])->name('reports.export');
+    
    
            // Parts Management
         Route::resource('parts', PartController::class);

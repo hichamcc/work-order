@@ -62,4 +62,17 @@ class User extends Authenticatable
     {
         return $this->role->slug === 'worker';
     }
+    public function assignedWorkOrders()
+    {
+        return $this->hasMany(WorkOrder::class, 'assigned_to');
+    }
+
+
+    public function workOrderTimes()
+    {
+        return $this->hasMany(WorkOrderTime::class);
+    }
+
+
+
 }
