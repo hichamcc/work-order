@@ -53,6 +53,7 @@ class ServiceTemplateController extends Controller
             'checklist_items' => 'required|array|min:1',
             'checklist_items.*.description' => 'required|string',
             'checklist_items.*.instructions' => 'nullable|string',
+            'checklist_items.*.photo_instructions' => 'nullable|string',
             'checklist_items.*.requires_photo' => 'boolean',
             'checklist_items.*.is_required' => 'boolean',
         ]);
@@ -73,6 +74,8 @@ class ServiceTemplateController extends Controller
                 $template->checklistItems()->create([
                     'description' => $item['description'],
                     'instructions' => $item['instructions'] ?? null,
+                    'photo_instructions' => $item['photo_instructions'] ?? null,
+
                     'requires_photo' => $item['requires_photo'] ?? false,
                     'is_required' => $item['is_required'] ?? true,
                     'order' => $index + 1,
@@ -125,6 +128,7 @@ class ServiceTemplateController extends Controller
             'checklist_items.*.id' => 'nullable|exists:checklist_items,id',
             'checklist_items.*.description' => 'required|string',
             'checklist_items.*.instructions' => 'nullable|string',
+            'checklist_items.*.photo_instructions' => 'nullable|string',
             'checklist_items.*.requires_photo' => 'boolean',
             'checklist_items.*.is_required' => 'boolean',
         ]);
@@ -149,6 +153,7 @@ class ServiceTemplateController extends Controller
                     ChecklistItem::where('id', $item['id'])->update([
                         'description' => $item['description'],
                         'instructions' => $item['instructions'] ?? null,
+                        'photo_instructions' => $item['photo_instructions'] ?? null,
                         'requires_photo' => $item['requires_photo'] ?? false,
                         'is_required' => $item['is_required'] ?? true,
                         'order' => $index + 1,

@@ -10,6 +10,7 @@ class ChecklistItem extends Model
         'service_template_id',
         'description',
         'instructions',
+        'photo_instructions',
         'order',
         'requires_photo',
         'is_required',

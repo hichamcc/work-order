@@ -118,10 +118,20 @@
                     <span class="ml-2 text-sm text-gray-600">{{ __('Required') }}</span>
                 </label>
             </div>
+
+            <!-- Photo Instructions (conditionally shown) -->
+            <div class="md:col-span-2" x-show="item.requires_photo">
+                <x-input-label :value="__('Photo Instructions')" />
+                <textarea
+                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                    x-model="item.photo_instructions" 
+                    :name="`checklist_items[${index}][photo_instructions]`"
+                    rows="2"
+                    placeholder="Provide specific instructions for what photos should be taken (e.g., 'Take a clear photo of the serial number')"></textarea>
+            </div>
         </div>
     </div>
 </template>
-
                             <div x-show="items.length === 0" class="text-gray-500 text-center py-4 bg-gray-50 rounded-lg">
                                 {{ __('No checklist items added yet. Click "Add Item" to start building your template.') }}
                             </div>
@@ -149,6 +159,7 @@
             this.items.push({
                 description: '',
                 instructions: '',
+                photo_instructions: '',
                 requires_photo: false,
                 is_required: true
             });

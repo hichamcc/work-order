@@ -16,6 +16,9 @@
         @if($item->checklistItem->instructions)
             <div class="mt-1 text-sm text-gray-500">{{ $item->checklistItem->instructions }}</div>
         @endif
+        @if($item->checklistItem->photo_instructions && $item->checklistItem->requires_photo)
+            <div class="mt-1 text-sm text-gray-500">📷  {{ $item->checklistItem->photo_instructions }}</div>
+        @endif
         
         @if($item->is_completed)
             <div class="mt-2 text-xs text-gray-500">

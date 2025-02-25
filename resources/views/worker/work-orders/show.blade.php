@@ -139,9 +139,10 @@
                                                             <span class="text-red-500">*</span>
                                                         @endif
                                                     </label>
-                                                    @if($item->checklistItem->requires_photo)
-                                                        <span class="ml-2 text-sm text-gray-500">(Photo Required)</span>
+                                                    @if($item->checklistItem->instructions)
+                                                    <div class="mt-1 text-sm text-gray-500">{{ $item->checklistItem->instructions }}</div>
                                                     @endif
+                                                  
                                                 </div>
                                             </div>
                                             @if($item->completed_at)
@@ -161,13 +162,19 @@
 
                                         <!-- Photo Upload -->
                                         @if($item->checklistItem->requires_photo)
+                                          
                                             <div>
                                                 <input type="file" 
                                                        name="photos[]" 
                                                        multiple 
                                                        accept="image/*"
                                                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                            </div>
+                                           
+                                                    </div>
+                                                    <span class="ml-2 text-sm text-gray-500">(Photo Required)</span>
+                                            @if($item->checklistItem->photo_instructions )
+                                                <div class="mt-1 text-sm text-gray-500">📷  {{ $item->checklistItem->photo_instructions }}</div>
+                                            @endif
                                         @endif
 
                                         <!-- Existing Photos -->

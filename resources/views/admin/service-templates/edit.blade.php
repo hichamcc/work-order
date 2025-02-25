@@ -96,41 +96,52 @@
                                         <div>
                                             <x-input-label :value="__('Description')" />
                                             <input type="text" 
-                                                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                                   x-model="item.description" 
-                                                   :name="`checklist_items[${index}][description]`"
-                                                   required />
+                                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                                x-model="item.description" 
+                                                :name="`checklist_items[${index}][description]`"
+                                                required />
                                             <input type="hidden" 
-                                                   x-bind:name="`checklist_items[${index}][id]`" 
-                                                   x-bind:value="item.id" />
+                                                x-bind:name="`checklist_items[${index}][id]`" 
+                                                x-bind:value="item.id" />
                                         </div>
 
                                         <div>
                                             <x-input-label :value="__('Instructions')" />
                                             <input type="text" 
-                                                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                                   x-model="item.instructions" 
-                                                   :name="`checklist_items[${index}][instructions]`" />
+                                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                                x-model="item.instructions" 
+                                                :name="`checklist_items[${index}][instructions]`" />
                                         </div>
 
                                         <div class="md:col-span-2 flex space-x-6">
                                             <label class="inline-flex items-center">
                                                 <input type="checkbox" 
-                                                       x-model="item.requires_photo"
-                                                       :name="`checklist_items[${index}][requires_photo]`"
-                                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                                                       value="1">
+                                                    x-model="item.requires_photo"
+                                                    :name="`checklist_items[${index}][requires_photo]`"
+                                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                    value="1">
                                                 <span class="ml-2 text-sm text-gray-600">{{ __('Requires Photo') }}</span>
                                             </label>
 
                                             <label class="inline-flex items-center">
                                                 <input type="checkbox" 
-                                                       x-model="item.is_required"
-                                                       :name="`checklist_items[${index}][is_required]`"
-                                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                                                       value="1">
+                                                    x-model="item.is_required"
+                                                    :name="`checklist_items[${index}][is_required]`"
+                                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                                    value="1">
                                                 <span class="ml-2 text-sm text-gray-600">{{ __('Required') }}</span>
                                             </label>
+                                        </div>
+                                        
+                                        <!-- Photo Instructions (conditionally shown) -->
+                                        <div class="md:col-span-2" x-show="item.requires_photo">
+                                            <x-input-label :value="__('Photo Instructions')" />
+                                            <textarea
+                                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                                x-model="item.photo_instructions" 
+                                                :name="`checklist_items[${index}][photo_instructions]`"
+                                                rows="2"
+                                                placeholder="Provide specific instructions for what photos should be taken (e.g., 'Take a clear photo of the serial number')"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -162,6 +173,7 @@
                         id: null,
                         description: '',
                         instructions: '',
+                        photo_instructions: '',
                         requires_photo: false,
                         is_required: true
                     });
