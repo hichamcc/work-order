@@ -81,6 +81,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -124,6 +125,21 @@
                                             {{ ucfirst(str_replace('_', ' ', $workOrder->status)) }}
                                         </span>
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-gray-900">
+                                            @php
+                                                $totalMinutes = $workOrder->times->sum(function($time) {
+                                                    $end = $time->ended_at ?? now();
+                                                    return $time->started_at->diffInMinutes($end);
+                                                });
+                                                $hours = floor($totalMinutes / 60);
+                                                $minutes = $totalMinutes % 60;
+                                            @endphp
+                                            {{ $hours }}h {{ $minutes }}m
+                                        </span>
+                                    </td>
+
+
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">
                                             {{ $workOrder->due_date ? $workOrder->due_date->format('M d, Y') : 'No due date' }}
