@@ -13,7 +13,8 @@ class StockAdjustment extends Model
         'new_stock',
         'adjustment_quantity',
         'adjustment_type',
-        'notes'
+        'notes',
+        'part_instance_id' // New field for serialized parts
     ];
 
     public function part()
@@ -24,5 +25,11 @@ class StockAdjustment extends Model
     public function adjustedBy()
     {
         return $this->belongsTo(User::class, 'adjusted_by');
+    }
+    
+    // New relationship for serialized parts
+    public function partInstance()
+    {
+        return $this->belongsTo(PartInstance::class);
     }
 }

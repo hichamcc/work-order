@@ -139,10 +139,39 @@
                                                             <span class="text-red-500">*</span>
                                                         @endif
                                                     </label>
+
+
                                                     @if($item->checklistItem->instructions)
                                                     <div class="mt-1 text-sm text-gray-500">{{ $item->checklistItem->instructions }}</div>
                                                     @endif
-                                                  
+
+                                                       <!-- File Instructions -->
+                                                        @if($item->checklistItem->file_instructions)
+                                                        <div class="mt-2">
+                                                            <a href="{{ Storage::url($item->checklistItem->file_instructions) }}" 
+                                                            target="_blank" 
+                                                            class="inline-flex items-center px-3 py-1 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100">
+                                                                <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                </svg>
+                                                                View Instructions
+                                                            </a>
+                                                            
+                                                            @php
+                                                                $fileExtension = pathinfo(Storage::url($item->checklistItem->file_instructions), PATHINFO_EXTENSION);
+                                                                $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif', 'bmp']);
+                                                            @endphp
+                                                            
+                                                            @if($isImage)
+                                                                <div class="mt-2">
+                                                                    <img src="{{ Storage::url($item->checklistItem->file_instructions) }}" 
+                                                                        alt="Instruction image" 
+                                                                        class="max-w-full h-auto max-h-48 rounded border border-gray-200">
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+                                                                
                                                 </div>
                                             </div>
                                             @if($item->completed_at)
@@ -211,30 +240,48 @@
                     
                     @if($workOrder->status !== 'completed')
                         <!-- Add Part Form -->
-                        <form action="{{ route('worker.work-orders.add-part', $workOrder) }}" method="POST" class="mb-6">
+                        <form action="{{ route('worker.work-orders.add-part', $workOrder) }}" method="POST" class="mb-6" id="addPartForm">
                             @csrf
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div class="col-span-2">
-                                    <select name="part_id" required class="w-full rounded-md border-gray-300">
+                                    <select name="part_id" id="part_id" required class="w-full rounded-md border-gray-300" onchange="checkSerialTracking()">
                                         <option value="">Select Part</option>
                                         @foreach($parts as $part)
-                                            <option value="{{ $part->id }}">{{ $part->name }}</option>
+                                            <option value="{{ $part->id }}" 
+                                                    data-serialized="{{ $part->track_serials ? 'true' : 'false' }}"
+                                                    data-stock="{{ $part->stock }}">
+                                                {{ $part->name }} ({{ $part->stock }} in stock)
+                                                @if($part->track_serials) [Serial Tracked] @endif
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div>
                                     <input type="number" 
-                                           name="quantity" 
-                                           min="1" 
-                                           value="1" 
-                                           required 
-                                           class="w-full rounded-md border-gray-300"
-                                           placeholder="Quantity">
+                                        id="quantity"
+                                        name="quantity" 
+                                        min="1" 
+                                        value="1" 
+                                        required 
+                                        class="w-full rounded-md border-gray-300"
+                                        placeholder="Quantity"
+                                        onchange="updateSerialSelection()">
                                 </div>
                                 <div>
                                     <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
                                         Add Part
                                     </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Serial Number Selection Section (hidden by default) -->
+                            <div id="serialSelectionSection" class="mt-4 p-4 border border-gray-200 rounded-md hidden">
+                                <h4 class="font-medium mb-2">Select Serial Numbers</h4>
+                                <p class="text-sm text-gray-600 mb-3">Please select <span id="requiredCount">1</span> serial number(s):</p>
+                                
+                                <div id="serialNumbersList" class="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                                    <!-- Serial numbers will be loaded here via AJAX -->
+                                    <div class="text-gray-500 italic">Loading available serial numbers...</div>
                                 </div>
                             </div>
                         </form>
@@ -246,28 +293,51 @@
                             <thead>
                                 <tr>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Part</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Serial #</th>
                                     <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
                                     <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($workOrder->parts as $part)
+                                @foreach($workOrder->parts as $workOrderPart)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $part->part->name }}
+                                            {{ $workOrderPart->part->name }}
+                                            @if($workOrderPart->part->track_serials)
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    Serial Tracked
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-900">
+                                            @if($workOrderPart->part->track_serials)
+                                                <div class="text-sm">
+                                                    @php
+                                                        $instances = \App\Models\PartInstance::where('part_id', $workOrderPart->part_id)
+                                                            ->where('work_order_id', $workOrder->id)
+                                                            ->get();
+                                                    @endphp
+                                                    
+                                                    @foreach($instances as $instance)
+                                                        <div class="mb-1">{{ $instance->serial_number }}</div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                -
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            {{ $part->quantity }}
+                                            {{ $workOrderPart->quantity }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            ${{ number_format($part->cost_at_time * $part->quantity, 2) }}
+                                            ${{ number_format($workOrderPart->cost_at_time * $workOrderPart->quantity, 2) }}
                                         </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="2" class="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                    <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900 text-right">
                                         Total Cost:
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
@@ -282,6 +352,137 @@
                 </div>
             </div>
 
+            <!-- JavaScript for Serial Number Selection -->
+            <script>
+                // Track if the part is serialized
+                let isSerialTracked = false;
+                let availableStock = 0;
+                
+                function checkSerialTracking() {
+                    const partSelect = document.getElementById('part_id');
+                    const selectedOption = partSelect.options[partSelect.selectedIndex];
+                    const serialSection = document.getElementById('serialSelectionSection');
+                    
+                    isSerialTracked = selectedOption.getAttribute('data-serialized') === 'true';
+                    availableStock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+                    
+                    // Show/hide serial number selection section
+                    if (isSerialTracked && partSelect.value !== '') {
+                        serialSection.classList.remove('hidden');
+                        loadSerialNumbers(partSelect.value);
+                        updateSerialSelection();
+                    } else {
+                        serialSection.classList.add('hidden');
+                    }
+                    
+                    // Update quantity max value for non-serialized parts
+                    const quantityInput = document.getElementById('quantity');
+                    if (!isSerialTracked) {
+                        quantityInput.max = availableStock;
+                    } else {
+                        quantityInput.removeAttribute('max');
+                    }
+                }
+                
+                function updateSerialSelection() {
+                    const quantity = parseInt(document.getElementById('quantity').value);
+                    document.getElementById('requiredCount').textContent = quantity;
+                    
+                    // If serialized, reload serial numbers when quantity changes
+                    if (isSerialTracked) {
+                        const partId = document.getElementById('part_id').value;
+                        if (partId) {
+                            loadSerialNumbers(partId);
+                        }
+                    }
+                }
+                
+                function loadSerialNumbers(partId) {
+                    const serialsList = document.getElementById('serialNumbersList');
+                    const quantity = parseInt(document.getElementById('quantity').value);
+                    
+                    // Show loading message
+                    serialsList.innerHTML = '<div class="text-gray-500 italic col-span-3">Loading available serial numbers...</div>';
+                    
+                    // Fetch available serial numbers
+                    fetch(`/api/parts/${partId}/serials`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.length === 0) {
+                                serialsList.innerHTML = '<div class="text-red-500 italic col-span-3">No serial numbers available for this part</div>';
+                                return;
+                            }
+                            
+                            let html = '';
+                            data.forEach(serial => {
+                                html += `
+                                <div class="flex items-center space-x-2">
+                                    <input type="checkbox" 
+                                        name="serial_numbers[]" 
+                                        value="${serial.id}" 
+                                        id="serial_${serial.id}" 
+                                        class="serial-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <label for="serial_${serial.id}" class="text-sm">${serial.serial_number}</label>
+                                </div>`;
+                            });
+                            
+                            serialsList.innerHTML = html;
+                            
+                            // Set up event listeners for checkboxes
+                            const checkboxes = document.querySelectorAll('.serial-checkbox');
+                            checkboxes.forEach(checkbox => {
+                                checkbox.addEventListener('change', function() {
+                                    enforceSelectionLimit(quantity);
+                                });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error loading serial numbers:', error);
+                            serialsList.innerHTML = '<div class="text-red-500 italic col-span-3">Error loading serial numbers</div>';
+                        });
+                }
+                
+                function enforceSelectionLimit(limit) {
+                    const checkboxes = document.querySelectorAll('.serial-checkbox:checked');
+                    
+                    if (checkboxes.length > limit) {
+                        // If more than the limit are checked, uncheck the last one
+                        checkboxes[checkboxes.length - 1].checked = false;
+                    }
+                    
+                    // Update the count display
+                    const selected = document.querySelectorAll('.serial-checkbox:checked').length;
+                    document.getElementById('requiredCount').textContent = `${limit} (${selected} selected)`;
+                }
+                
+                // Form validation before submit
+                document.getElementById('addPartForm').addEventListener('submit', function(e) {
+                    const partSelect = document.getElementById('part_id');
+                    
+                    if (partSelect.value === '') {
+                        alert('Please select a part');
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // Validate serial selection if needed
+                    if (isSerialTracked) {
+                        const quantity = parseInt(document.getElementById('quantity').value);
+                        const selectedSerials = document.querySelectorAll('.serial-checkbox:checked').length;
+                        
+                        if (selectedSerials !== quantity) {
+                            alert(`Please select exactly ${quantity} serial numbers`);
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+                });
+                
+                // Initialize on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    checkSerialTracking();
+                });
+            </script>
             <!-- Comments Section -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">

@@ -79,8 +79,17 @@
                             <option value="low_stock" {{ request('stock_status') === 'low_stock' ? 'selected' : '' }}>Low Stock</option>
                         </select>
                     </div>
+                    
+                    <div>
+                        <x-input-label for="tracking_type" :value="__('Tracking Type')" />
+                        <select name="tracking_type" id="tracking_type" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <option value="">All Types</option>
+                            <option value="serial" {{ request('tracking_type') === 'serial' ? 'selected' : '' }}>Serial Tracked</option>
+                            <option value="quantity" {{ request('tracking_type') === 'quantity' ? 'selected' : '' }}>Quantity Only</option>
+                        </select>
+                    </div>
 
-                    <div class="flex items-end space-x-2">
+                    <div class="flex items-end space-x-2 md:col-span-4">
                         <x-primary-button type="submit">
                             {{ __('Filter') }}
                         </x-primary-button>
@@ -122,6 +131,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ $part->name }}</div>
                                         <div class="text-sm text-gray-500">{{ $part->part_number }}</div>
+                                        @if($part->track_serials)
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                Serial Tracked
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">{{ $part->stock }}</div>
@@ -147,21 +161,29 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div class="flex justify-end space-x-2">
+                                            <a href="{{ route('admin.parts.show', $part) }}" 
+                                               class="text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-md">
+                                                View
+                                            </a>
+                                            
                                             <a href="{{ route('admin.parts.edit', $part) }}" 
                                                class="text-indigo-600 hover:text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-3 py-1 rounded-md">
                                                 Edit
                                             </a>
 
                                             <button type="button" 
-                                                    onclick="Livewire.dispatch('openModal', { component: 'adjust-stock-modal', arguments: { partId: {{ $part->id }} }})"
-                                                    class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md">
+                                            onclick="Livewire.dispatch('openModal', { component: 'parts.adjust-stock', arguments: { partId: {{ $part->id }} }})"
+                                            class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md">
                                                 Adjust Stock
                                             </button>
-
-                                            <a href="{{ route('admin.parts.stock-history', $part) }}" 
-                                                class="text-purple-600 hover:text-purple-900 bg-purple-100 hover:bg-purple-200 px-3 py-1 rounded-md">
-                                                    History
-                                            </a>
+                                            
+                                            @if($part->track_serials)
+                                            <button type="button" 
+                                            onclick="Livewire.dispatch('openModal', { component: 'parts.print-barcodes', arguments: { partId: {{ $part->id }} }})"
+                                            class="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md">
+                                                Print Barcodes
+                                            </button>
+                                            @endif
 
                                             <form action="{{ route('admin.parts.toggle-status', $part) }}" 
                                                   method="POST" 
@@ -214,7 +236,7 @@
     document.addEventListener('stock-adjusted', function() {
         location.reload();  // Reload the page when the event is triggered
     });
-</script>
+    </script>
     @endpush
 
 </x-app-layout>

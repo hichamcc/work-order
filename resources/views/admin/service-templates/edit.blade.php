@@ -14,7 +14,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-                <form method="POST" action="{{ route('admin.service-templates.update', $template) }}" class="p-6" x-data="templateForm()">
+                <form method="POST" action="{{ route('admin.service-templates.update', $template) }}" class="p-6" x-data="templateForm()" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -112,6 +112,36 @@
                                                 x-model="item.instructions" 
                                                 :name="`checklist_items[${index}][instructions]`" />
                                         </div>
+                                        <!-- File Instructions (new section) -->
+<div class="md:col-span-2 mt-4">
+    <x-input-label :value="__('Instruction File (Optional)')" />
+    <input type="file" 
+        :name="`checklist_items[${index}][file_instructions]`"
+        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+    
+                            <!-- Show current file if exists -->
+                            <template x-if="item.file_instructions">
+                                <div class="mt-2 flex items-center justify-between bg-gray-100 p-2 rounded">
+                                    <div class="flex items-center">
+                                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span class="ml-2 text-xs text-gray-600 truncate max-w-xs" x-text="item.file_instructions.split('/').pop()"></span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <a :href="'/storage/' + item.file_instructions" target="_blank" class="text-xs text-blue-600 hover:text-blue-800">View</a>
+                                        <label class="text-xs text-red-600 hover:text-red-800 cursor-pointer">
+                                            <input type="checkbox" :name="`checklist_items[${index}][remove_file]`" value="1" class="hidden" />
+                                            Remove
+                                        </label>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <p class="text-xs text-gray-500 mt-1">
+                                Acceptable formats: PDF, Word, Excel, PowerPoint, Text, ZIP, Images (JPG, PNG, GIF) (Max 10MB)
+                            </p>
+                        </div>
 
                                         <div class="md:col-span-2 flex space-x-6">
                                             <label class="inline-flex items-center">
@@ -175,6 +205,7 @@
                         instructions: '',
                         photo_instructions: '',
                         requires_photo: false,
+                        file_instructions: null,
                         is_required: true
                     });
                 },

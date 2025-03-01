@@ -93,6 +93,67 @@
                                 </label>
                                 <p class="mt-1 text-sm text-gray-500">Active parts can be used in work orders</p>
                             </div>
+                            
+                            <!-- Serial Number Tracking Options -->
+                            <div class="col-span-2">
+                                <div class="p-4 border border-gray-200 rounded-md">
+                                    <div class="mb-4">
+                                        <label class="inline-flex items-center">
+                                            <input type="checkbox" 
+                                                   id="track_serials"
+                                                   name="track_serials" 
+                                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" 
+                                                   value="1"
+                                                   {{ old('track_serials') ? 'checked' : '' }}
+                                                   onchange="toggleSerialOptions()">
+                                            <span class="ml-2 text-md font-medium text-gray-700">{{ __('Track Serial Numbers') }}</span>
+                                        </label>
+                                        <p class="mt-1 text-sm text-gray-500">Enable this to track individual parts with unique serial numbers</p>
+                                    </div>
+                                    
+                                    <div id="serial_options" class="ml-6 pl-2 border-l-2 border-gray-200" style="display: none;">
+                                        <p class="mb-2 font-medium">Serial Number Generation:</p>
+                                        
+                                        <div class="mb-3">
+                                            <label class="inline-flex items-center mb-2">
+                                                <input type="radio" 
+                                                       name="serial_generation_type" 
+                                                       value="automatic"
+                                                       class="border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                       {{ old('serial_generation_type', 'automatic') === 'automatic' ? 'checked' : '' }}
+                                                       onchange="toggleSerialOptions()">
+                                                <span class="ml-2 text-sm text-gray-700">{{ __('Automatic Generation') }}</span>
+                                            </label>
+                                            <p class="ml-6 text-xs text-gray-500">System will generate sequential serial numbers based on part number</p>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="inline-flex items-center mb-2">
+                                                <input type="radio" 
+                                                       name="serial_generation_type" 
+                                                       value="manual"
+                                                       class="border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                       {{ old('serial_generation_type') === 'manual' ? 'checked' : '' }}
+                                                       onchange="toggleSerialOptions()">
+                                                <span class="ml-2 text-sm text-gray-700">{{ __('Manual Entry') }}</span>
+                                            </label>
+                                            <p class="ml-6 text-xs text-gray-500">You'll need to manually enter serial numbers for each item</p>
+                                        </div>
+                                        
+                                        <div class="mt-4">
+                                            <label class="inline-flex items-center">
+                                                <input type="checkbox" 
+                                                    name="generate_barcodes" 
+                                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" 
+                                                    value="1"
+                                                    {{ old('generate_barcodes', true) ? 'checked' : '' }}>
+                                                <span class="ml-2 text-sm text-gray-700">{{ __('Generate Printable Barcodes') }}</span>
+                                            </label>
+                                            <p class="ml-6 text-xs text-gray-500">Create barcodes for each serial number for easy scanning</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="flex justify-end">
@@ -105,4 +166,22 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        function toggleSerialOptions() {
+            const trackSerials = document.getElementById('track_serials').checked;
+            const serialOptions = document.getElementById('serial_options');
+            
+            if (trackSerials) {
+                serialOptions.style.display = 'block';
+            } else {
+                serialOptions.style.display = 'none';
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleSerialOptions();
+        });
+    </script>
 </x-app-layout>

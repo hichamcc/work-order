@@ -26,6 +26,13 @@ Route::get('/', function () {
 });
 
 
+Route::get('/api/parts/{part}/serials', function (App\Models\Part $part) {
+    return $part->partInstances()
+        ->where('status', 'in_stock')
+        ->orderBy('created_at', 'desc')
+        ->get(['id', 'serial_number']);
+});
+
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
@@ -88,6 +95,9 @@ Route::middleware(['auth'])->group(function () {
         
         // Additional Parts Routes
         Route::prefix('parts')->name('parts.')->group(function () {
+            Route::get('{part}', [PartController::class, 'show'])
+            ->name('show');
+
             Route::get('{part}/stock-history', [PartController::class, 'stockHistory'])
             ->name('stock-history');
             Route::patch('{part}/toggle-status', [PartController::class, 'toggleStatus'])
@@ -100,8 +110,23 @@ Route::middleware(['auth'])->group(function () {
             Route::get('export', [PartController::class, 'export'])
                 ->name('export');
 
+
+
+                 // Serial number management
+            Route::get('{part}/serials/create', [PartController::class, 'createSerials'])->name('serials.create');
+            Route::post('{part}/serials', [PartController::class, 'storeSerials'])->name('serials.store');
+            Route::delete('serials/{partInstance}', [PartController::class, 'destroySerial'])->name('serials.destroy');
+            
+            // Barcode generation
+            //Route::get('barcode/{partInstance}', [PartController::class, 'barcode'])->name('barcode');
+            Route::post('barcodes/print', [PartController::class, 'printBarcodes'])->name('barcodes.print');
+            // Parts barcode routes
+            Route::get('{part}/print-barcodes', [PartController::class, 'printBarcodes'])
+            ->name('print-barcodes');
+
         });
-   
+
+       
    
    
     });

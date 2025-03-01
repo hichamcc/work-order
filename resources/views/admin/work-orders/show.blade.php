@@ -124,58 +124,96 @@
                         </div>
                     </div>
 
-                    <!-- Parts Used -->
-                    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Parts Used</h3>
-                            @if($workOrder->parts->count() > 0)
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead>
+              <!-- Parts Used -->
+                <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Parts Used</h3>
+                        @if($workOrder->parts->count() > 0)
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Part</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Serial Numbers</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($workOrder->parts as $part)
                                             <tr>
-                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Part</th>
-                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
-                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            @foreach($workOrder->parts as $part)
-                                                <tr>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {{ $part->part->name }}
-                                                        <div class="text-xs text-gray-500">{{ $part->part->part_number }}</div>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {{ $part->quantity }}
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        ${{ number_format($part->cost_at_time * $part->quantity, 2) }}
-                                                    </td>
-                                                    <td class="px-6 py-4 text-sm text-gray-500">
-                                                        {{ $part->notes }}
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td colspan="2" class="px-6 py-4 text-sm font-medium text-gray-900">Total</td>
-                                                <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                                    ${{ number_format($workOrder->parts->sum(function($part) {
-                                                        return $part->cost_at_time * $part->quantity;
-                                                    }), 2) }}
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {{ $part->part->name }}
+                                                    <div class="text-xs text-gray-500">{{ $part->part->part_number }}</div>
+                                                    @if($part->part->track_serials)
+                                                        <span class="px-2 mt-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                            Serial Tracked
+                                                        </span>
+                                                    @endif
                                                 </td>
-                                                <td></td>
+                                                <td class="px-6 py-4 text-sm text-gray-900">
+                                                    @if($part->part->track_serials)
+                                                        @php
+                                                            $instances = \App\Models\PartInstance::where('part_id', $part->part_id)
+                                                                ->where('work_order_id', $workOrder->id)
+                                                                ->get();
+                                                        @endphp
+                                                        
+                                                        @if($instances->count() > 0)
+                                                            <div class="space-y-1">
+                                                                @foreach($instances as $instance)
+                                                                    <div class="flex items-center">
+                                                                        <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ $instance->serial_number }}</span>
+                                                                        @if($instance->status === 'assigned')
+                                                                            <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                                                Assigned
+                                                                            </span>
+                                                                        @elseif($instance->status === 'used')
+                                                                            <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                                                Used
+                                                                            </span>
+                                                                        @endif
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @else
+                                                            <span class="text-gray-500 italic">No serial numbers assigned</span>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-gray-500">N/A</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {{ $part->quantity }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    ${{ number_format($part->cost_at_time * $part->quantity, 2) }}
+                                                </td>
+                                                <td class="px-6 py-4 text-sm text-gray-500">
+                                                    {{ $part->notes }}
+                                                </td>
                                             </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            @else
-                                <p class="text-gray-500 text-sm">No parts have been used yet.</p>
-                            @endif
-                        </div>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900">Total</td>
+                                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                                                ${{ number_format($workOrder->parts->sum(function($part) {
+                                                    return $part->cost_at_time * $part->quantity;
+                                                }), 2) }}
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        @else
+                            <p class="text-gray-500 text-sm">No parts have been used yet.</p>
+                        @endif
                     </div>
+                </div>
 
                     <!-- Comments -->
                     @include('admin.work-orders._partials._comments', ['comments' => $workOrder->comments])

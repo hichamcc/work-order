@@ -56,11 +56,12 @@ class ServiceTemplateController extends Controller
             'checklist_items.*.photo_instructions' => 'nullable|string',
             'checklist_items.*.requires_photo' => 'boolean',
             'checklist_items.*.is_required' => 'boolean',
+            'checklist_items.*.file_instructions' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,jpg,jpeg,png,gif,bmp|max:10240',
         ]);
-
+    
         try {
             DB::beginTransaction();
-
+    
             $template = ServiceTemplate::create([
                 'name' => $validated['name'],
                 'description' => $validated['description'],
@@ -69,19 +70,26 @@ class ServiceTemplateController extends Controller
                 'created_by' => auth()->id(),
                 'version' => 1,
             ]);
-
-            foreach ($validated['checklist_items'] as $index => $item) {
-                $template->checklistItems()->create([
-                    'description' => $item['description'],
-                    'instructions' => $item['instructions'] ?? null,
-                    'photo_instructions' => $item['photo_instructions'] ?? null,
-
-                    'requires_photo' => $item['requires_photo'] ?? false,
-                    'is_required' => $item['is_required'] ?? true,
+    
+            foreach ($request->input('checklist_items') as $index => $itemData) {
+                // Create checklist item without file first
+                $item = $template->checklistItems()->create([
+                    'description' => $itemData['description'],
+                    'instructions' => $itemData['instructions'] ?? null,
+                    'photo_instructions' => $itemData['photo_instructions'] ?? null,
+                    'requires_photo' => isset($itemData['requires_photo']),
+                    'is_required' => isset($itemData['is_required']),
                     'order' => $index + 1,
                 ]);
+                
+                // Handle file upload if present
+                if ($request->hasFile("checklist_items.{$index}.file_instructions")) {
+                    $file = $request->file("checklist_items.{$index}.file_instructions");
+                    $path = $file->store('checklist-instructions', 'public');
+                    $item->update(['file_instructions' => $path]);
+                }
             }
-
+    
             // Create initial version
             $template->versions()->create([
                 'version' => 1,
@@ -92,9 +100,9 @@ class ServiceTemplateController extends Controller
                 'created_at' => now(),
                 'change_notes' => 'Initial version',
             ]);
-
+    
             DB::commit();
-
+    
             return redirect()
                 ->route('admin.service-templates.index')
                 ->with('success', 'Service template created successfully.');
@@ -131,11 +139,12 @@ class ServiceTemplateController extends Controller
             'checklist_items.*.photo_instructions' => 'nullable|string',
             'checklist_items.*.requires_photo' => 'boolean',
             'checklist_items.*.is_required' => 'boolean',
+            'checklist_items.*.remove_file' => 'nullable|boolean',
         ]);
-
+    
         try {
             DB::beginTransaction();
-
+    
             // Update template
             $serviceTemplate->update([
                 'name' => $validated['name'],
@@ -144,39 +153,73 @@ class ServiceTemplateController extends Controller
                 'is_active' => $request->boolean('is_active', true),
                 'version' => $serviceTemplate->version + 1,
             ]);
-
+    
             // Update checklist items
             $existingIds = [];
-            foreach ($validated['checklist_items'] as $index => $item) {
-                if (isset($item['id'])) {
+            foreach ($request->input('checklist_items') as $index => $itemData) {
+                if (isset($itemData['id'])) {
                     // Update existing item
-                    ChecklistItem::where('id', $item['id'])->update([
-                        'description' => $item['description'],
-                        'instructions' => $item['instructions'] ?? null,
-                        'photo_instructions' => $item['photo_instructions'] ?? null,
-                        'requires_photo' => $item['requires_photo'] ?? false,
-                        'is_required' => $item['is_required'] ?? true,
+                    $item = ChecklistItem::find($itemData['id']);
+                    
+                    // Handle file removal if requested
+                    if (isset($itemData['remove_file']) && $itemData['remove_file'] && $item->file_instructions) {
+                        Storage::disk('public')->delete($item->file_instructions);
+                        $item->file_instructions = null;
+                    }
+                    
+                    $item->update([
+                        'description' => $itemData['description'],
+                        'instructions' => $itemData['instructions'] ?? null,
+                        'photo_instructions' => $itemData['photo_instructions'] ?? null,
+                        'requires_photo' => isset($itemData['requires_photo']),
+                        'is_required' => isset($itemData['is_required']),
                         'order' => $index + 1,
                     ]);
-                    $existingIds[] = $item['id'];
+                    
+                    // Handle file upload if present
+                    if ($request->hasFile("checklist_items.{$index}.file_instructions")) {
+                        // Remove old file if it exists
+                        if ($item->file_instructions) {
+                            Storage::disk('public')->delete($item->file_instructions);
+                        }
+                        
+                        $file = $request->file("checklist_items.{$index}.file_instructions");
+                        $path = $file->store('checklist-instructions', 'public');
+                        $item->update(['file_instructions' => $path]);
+                    }
+                    
+                    $existingIds[] = $item->id;
                 } else {
                     // Create new item
                     $newItem = $serviceTemplate->checklistItems()->create([
-                        'description' => $item['description'],
-                        'instructions' => $item['instructions'] ?? null,
-                        'requires_photo' => $item['requires_photo'] ?? false,
-                        'is_required' => $item['is_required'] ?? true,
+                        'description' => $itemData['description'],
+                        'instructions' => $itemData['instructions'] ?? null,
+                        'photo_instructions' => $itemData['photo_instructions'] ?? null,
+                        'requires_photo' => isset($itemData['requires_photo']),
+                        'is_required' => isset($itemData['is_required']),
                         'order' => $index + 1,
                     ]);
+                    
+                    // Handle file upload if present
+                    if ($request->hasFile("checklist_items.{$index}.file_instructions")) {
+                        $file = $request->file("checklist_items.{$index}.file_instructions");
+                        $path = $file->store('checklist-instructions', 'public');
+                        $newItem->update(['file_instructions' => $path]);
+                    }
+                    
                     $existingIds[] = $newItem->id;
                 }
             }
-
-            // Delete removed items
-            $serviceTemplate->checklistItems()
-                ->whereNotIn('id', $existingIds)
-                ->delete();
-
+    
+            // Delete removed items (and their files)
+            $itemsToDelete = $serviceTemplate->checklistItems()->whereNotIn('id', $existingIds)->get();
+            foreach ($itemsToDelete as $item) {
+                if ($item->file_instructions) {
+                    Storage::disk('public')->delete($item->file_instructions);
+                }
+                $item->delete();
+            }
+    
             // Create new version
             $serviceTemplate->versions()->create([
                 'version' => $serviceTemplate->version,
@@ -187,9 +230,9 @@ class ServiceTemplateController extends Controller
                 'created_at' => now(),
                 'change_notes' => $request->input('change_notes', 'Template updated'),
             ]);
-
+    
             DB::commit();
-
+    
             return redirect()
                 ->route('admin.service-templates.index')
                 ->with('success', 'Service template updated successfully.');

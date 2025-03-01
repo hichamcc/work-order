@@ -23,7 +23,7 @@
         
      <!-- Search and Filters -->
             <div class="mb-6 bg-white rounded-lg shadow-sm p-6">
-                <form action="{{ route('admin.service-templates.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form action="{{ route('admin.service-templates.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4" >
                     <div>
                         <x-input-label for="search" :value="__('Search')" />
                         <x-text-input id="search" name="search" type="text" class="mt-1 block w-full" 
