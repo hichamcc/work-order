@@ -17,7 +17,12 @@ class WorkerWorkOrderController extends Controller
     public function index(Request $request)
     {
         $query = WorkOrder::with(['serviceTemplate', 'checklistItems'])
-            ->where('assigned_to', auth()->id());
+            ->where(function ($q) {
+                $q->where('assigned_to', auth()->id())
+                ->orWhereHas('helpers', function ($helperQuery) {
+                    $helperQuery->where('users.id', auth()->id());
+                });
+            });
     
         // Status Filter
         if ($request->filled('status')) {
@@ -88,7 +93,7 @@ class WorkerWorkOrderController extends Controller
 
     public function show(WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
             abort(403, 'This work order is not assigned to you.');
         }
 
@@ -136,8 +141,9 @@ class WorkerWorkOrderController extends Controller
 
     public function pauseWork(WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403);
+      
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
 
         $activeTiming = $workOrder->times()
@@ -156,9 +162,10 @@ class WorkerWorkOrderController extends Controller
 
     public function updateStatus(Request $request, WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403);
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
 
         $validated = $request->validate([
             'status' => 'required|in:in_progress,on_hold,completed',
@@ -190,9 +197,10 @@ class WorkerWorkOrderController extends Controller
 
     public function updateChecklistItem(Request $request, WorkOrder $workOrder, $checklistItemId)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403);
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
     
         $validated = $request->validate([
             'is_completed' => 'required|boolean',
@@ -241,10 +249,10 @@ class WorkerWorkOrderController extends Controller
 
     public function addPart(Request $request, WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403);
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
-    
+
         $validated = $request->validate([
             'part_id' => 'required|exists:parts,id',
             'quantity' => 'required|integer|min:1',
@@ -346,9 +354,10 @@ class WorkerWorkOrderController extends Controller
 
     public function addComment(Request $request, WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403);
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
 
         $validated = $request->validate([
             'comment' => 'required|string',

@@ -8,6 +8,8 @@ use App\Models\TemplateCategory;
 use App\Models\ChecklistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
 
 class ServiceTemplateController extends Controller
 {
@@ -241,6 +243,100 @@ class ServiceTemplateController extends Controller
             return back()->with('error', 'Error updating template: ' . $e->getMessage());
         }
     }
+
+
+    /**
+ * Show form to duplicate a service template
+ */
+public function duplicate(ServiceTemplate $serviceTemplate)
+{
+    // Get categories for the dropdown
+    $categories = TemplateCategory::orderBy('name')->get();
+    
+    // Pre-fill with existing template data but suggest a new name
+    $template = $serviceTemplate;
+    $oldName = $template->name;
+    $template->name = $oldName . ' (Copy)';
+    
+    return view('admin.service-templates.duplicate', compact('template', 'categories', 'oldName'));
+}
+
+/**
+ * Store the duplicated template
+ */
+public function storeDuplicate(Request $request, ServiceTemplate $serviceTemplate)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'category_id' => 'nullable|exists:template_categories,id',
+        'is_active' => 'boolean',
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        // Create new template with the provided data
+        $newTemplate = ServiceTemplate::create([
+            'name' => $validated['name'],
+            'description' => $validated['description'],
+            'category_id' => $validated['category_id'],
+            'is_active' => $request->boolean('is_active', true),
+            'created_by' => auth()->id(),
+            'version' => 1,
+        ]);
+
+        // Duplicate all checklist items from the original template
+        foreach ($serviceTemplate->checklistItems as $item) {
+            // Create a copy of the file instructions if it exists
+            $fileInstructionsPath = null;
+            if ($item->file_instructions) {
+                $originalPath = $item->file_instructions;
+                $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+                $newFilename = uniqid() . '.' . $extension;
+                $newPath = 'checklist-instructions/' . $newFilename;
+                
+                // Copy the file to the new location
+                if (Storage::disk('public')->exists($originalPath)) {
+                    Storage::disk('public')->copy($originalPath, $newPath);
+                    $fileInstructionsPath = $newPath;
+                }
+            }
+            
+            // Create the new checklist item
+            $newTemplate->checklistItems()->create([
+                'description' => $item->description,
+                'instructions' => $item->instructions,
+                'photo_instructions' => $item->photo_instructions,
+                'file_instructions' => $fileInstructionsPath,
+                'requires_photo' => $item->requires_photo,
+                'is_required' => $item->is_required,
+                'order' => $item->order,
+                'additional_fields' => $item->additional_fields ?? null,
+            ]);
+        }
+
+        // Create initial version for the new template
+        $newTemplate->versions()->create([
+            'version' => 1,
+            'name' => $newTemplate->name,
+            'description' => $newTemplate->description,
+            'checklist_items' => $newTemplate->checklistItems()->get()->toArray(),
+            'created_by' => auth()->id(),
+            'created_at' => now(),
+            'change_notes' => 'Duplicated from template "' . $serviceTemplate->name . '"',
+        ]);
+
+        DB::commit();
+
+        return redirect()
+            ->route('admin.service-templates.index')
+            ->with('success', 'Service template duplicated successfully.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Error duplicating template: ' . $e->getMessage());
+    }
+}
 
     public function destroy(ServiceTemplate $serviceTemplate)
     {

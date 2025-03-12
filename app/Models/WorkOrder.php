@@ -66,4 +66,25 @@ class WorkOrder extends Model
         return $this->hasMany(WorkOrderComment::class);
     }
 
+    
+public function helpers()
+{
+    return $this->belongsToMany(User::class, 'work_order_helpers')
+                ->withTimestamps()
+                ->withPivot('notes');
+}
+
+// get all workers (primary + helpers)
+public function allWorkers()
+{
+    $primaryWorker = $this->assignedTo;
+    $helpers = $this->helpers;
+    
+    if ($primaryWorker) {
+        return $helpers->push($primaryWorker)->unique('id');
+    }
+    
+    return $helpers;
+}
+
 }

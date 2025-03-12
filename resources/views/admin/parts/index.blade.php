@@ -47,7 +47,7 @@
                 <div class="bg-white overflow-hidden shadow-sm rounded-lg">
                     <div class="p-6">
                         <div class="text-sm font-medium text-gray-500">Total Inventory Value</div>
-                        <div class="mt-1 text-3xl font-semibold text-gray-900">${{ number_format($stats['total_value'], 2) }}</div>
+                        <div class="mt-1 text-3xl font-semibold text-gray-900">DKR {{ number_format($stats['total_value'], 2) }}</div>
                     </div>
                 </div>
             </div>
@@ -150,8 +150,8 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">${{ number_format($part->cost, 2) }}</div>
-                                        <div class="text-sm text-gray-500">Value: ${{ number_format($part->stock * $part->cost, 2) }}</div>
+                                        <div class="text-sm text-gray-900">DKR {{ number_format($part->cost, 2) }}</div>
+                                        <div class="text-sm text-gray-500">Value: DKR {{ number_format($part->stock * $part->cost, 2) }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

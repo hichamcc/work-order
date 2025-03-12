@@ -41,7 +41,7 @@
                         
                         <div>
                             <p class="text-sm font-medium text-gray-500">Cost Per Unit</p>
-                            <p class="mt-1">${{ number_format($part->cost, 2) }}</p>
+                            <p class="mt-1">DKR {{ number_format($part->cost, 2) }}</p>
                         </div>
                         
                         <div>

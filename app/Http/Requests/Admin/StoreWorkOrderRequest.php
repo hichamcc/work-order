@@ -18,6 +18,8 @@ class StoreWorkOrderRequest extends FormRequest
             'description' => ['required', 'string', 'min:10'],
             'service_template_id' => ['nullable', 'exists:service_templates,id'],
             'assigned_to' => ['required', 'exists:users,id'],
+            'helpers' => 'nullable|array',
+            'helpers.*' => 'exists:users,id',
             'priority' => ['required', 'in:low,medium,high,urgent'],
             'due_date' => [
                 'nullable', 

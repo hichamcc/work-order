@@ -74,5 +74,20 @@ class User extends Authenticatable
     }
 
 
+public function helperWorkOrders()
+{
+    return $this->belongsToMany(WorkOrder::class, 'work_order_helpers')
+                ->withTimestamps()
+                ->withPivot('notes');
+}
+
+//  get all work orders (assigned as primary + helper)
+public function allWorkOrders()
+{
+    $primaryWorkOrders = $this->workOrders; // Assuming you have this relationship already
+    $helperWorkOrders = $this->helperWorkOrders;
+    
+    return $primaryWorkOrders->concat($helperWorkOrders)->unique('id');
+}
 
 }

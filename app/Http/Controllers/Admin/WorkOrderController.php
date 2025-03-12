@@ -69,13 +69,20 @@ class WorkOrderController extends Controller
     {
         try {
             DB::beginTransaction();
-
+    
+            // Get validated data
+            $validated = $request->validated();
+            
+            // Extract helpers from the validated data if they exist
+            $helpers = $validated['helpers'] ?? [];
+            unset($validated['helpers']); // Remove helpers from validated data before creating WorkOrder
+    
             $workOrder = WorkOrder::create([
-                ...$request->validated(),
+                ...$validated,
                 'created_by' => auth()->id(),
                 'status' => 'new',
             ]);
-
+    
             // If a service template is selected, copy its checklist items
             if ($request->filled('service_template_id')) {
                 $template = ServiceTemplate::with('checklistItems')->find($request->service_template_id);
@@ -86,13 +93,25 @@ class WorkOrderController extends Controller
                     ]);
                 }
             }
-
+            
+            // Sync helpers (if any)
+            if (!empty($helpers)) {
+                // Filter out the primary worker from helpers to avoid duplication
+                $helpers = array_filter($helpers, function($helperId) use ($workOrder) {
+                    return $helperId != $workOrder->assigned_to;
+                });
+                
+                if (!empty($helpers)) {
+                    $workOrder->helpers()->sync($helpers);
+                }
+            }
+    
             DB::commit();
-
+    
             return redirect()
                 ->route('admin.work-orders.index')
                 ->with('success', 'Work order created successfully.');
-
+    
         } catch (\Exception $e) {
             DB::rollBack();
             return back()
@@ -119,32 +138,54 @@ class WorkOrderController extends Controller
     }
 
     public function edit(WorkOrder $workOrder)
-    {
-        $workOrder->load(['assignedTo', 'serviceTemplate', 'checklistItems.checklistItem']);
-        $workers = User::whereHas('role', function($q) {
-            $q->where('slug', 'worker');
-        })->get();
-        $templates = ServiceTemplate::where('is_active', true)->get();
+{
+    // Load the workOrder with its relationships, including helpers
+    $workOrder->load(['assignedTo', 'serviceTemplate', 'checklistItems.checklistItem', 'helpers']);
+    
+    $workers = User::whereHas('role', function($q) {
+        $q->where('slug', 'worker');
+    })->get();
+    
+    $templates = ServiceTemplate::where('is_active', true)->get();
 
-        return view('admin.work-orders.edit', compact('workOrder', 'workers', 'templates'));
+    return view('admin.work-orders.edit', compact('workOrder', 'workers', 'templates'));
+}
+
+public function update(Request $request, WorkOrder $workOrder)
+{
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'assigned_to' => 'required|exists:users,id',
+        'priority' => 'required|in:low,medium,high,urgent',
+        'due_date' => 'nullable|date',
+        'helpers' => 'nullable|array',
+        'helpers.*' => 'exists:users,id',
+    ]);
+
+    // Extract helpers before updating the work order
+    $helpers = $validated['helpers'] ?? [];
+    unset($validated['helpers']);
+    
+    // Update the work order
+    $workOrder->update($validated);
+    
+    // Sync helpers, filtering out the primary worker
+    if (isset($helpers)) {
+        $helpers = array_filter($helpers, function($helperId) use ($workOrder) {
+            return $helperId != $workOrder->assigned_to;
+        });
+        
+        $workOrder->helpers()->sync($helpers);
+    } else {
+        // If no helpers were selected, remove all existing helpers
+        $workOrder->helpers()->sync([]);
     }
 
-    public function update(Request $request, WorkOrder $workOrder)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'assigned_to' => 'required|exists:users,id',
-            'priority' => 'required|in:low,medium,high,urgent',
-            'due_date' => 'nullable|date',
-        ]);
-
-        $workOrder->update($validated);
-
-        return redirect()
-            ->route('admin.work-orders.index')
-            ->with('success', 'Work order updated successfully.');
-    }
+    return redirect()
+        ->route('admin.work-orders.index')
+        ->with('success', 'Work order updated successfully.');
+}
 
     public function destroy(WorkOrder $workOrder)
     {

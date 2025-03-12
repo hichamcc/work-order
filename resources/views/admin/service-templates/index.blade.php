@@ -115,6 +115,11 @@
                                                 Edit
                                             </a>
 
+                                            <a href="{{ route('admin.service-templates.duplicate', $template) }}" 
+                                            class="text-purple-600 hover:text-purple-900 bg-purple-100 hover:bg-purple-200 px-3 py-1 rounded-md">
+                                             Duplicate
+                                           </a>
+
                                             <a href="{{ route('admin.service-templates.versions', $template) }}" 
                                                class="text-blue-600 hidden hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md">
                                                 Versions

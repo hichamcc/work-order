@@ -188,7 +188,7 @@
                                                     {{ $part->quantity }}
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    ${{ number_format($part->cost_at_time * $part->quantity, 2) }}
+                                                    DKR {{ number_format($part->cost_at_time * $part->quantity, 2) }}
                                                 </td>
                                                 <td class="px-6 py-4 text-sm text-gray-500">
                                                     {{ $part->notes }}
@@ -200,7 +200,7 @@
                                         <tr>
                                             <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900">Total</td>
                                             <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                                ${{ number_format($workOrder->parts->sum(function($part) {
+                                                DKR {{ number_format($workOrder->parts->sum(function($part) {
                                                     return $part->cost_at_time * $part->quantity;
                                                 }), 2) }}
                                             </td>
@@ -265,6 +265,17 @@
                                         {{ $workOrder->assignedTo->name }}
                                     </dd>
                                 </div>
+                                @if($workOrder->helpers->isNotEmpty())
+                                    <dt class="text-sm font-medium text-gray-500 mt-4">Other Workers</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">
+                                        <ul class="list-disc pl-5 space-y-1">
+                                            @foreach($workOrder->helpers as $helper)
+                                                <li>{{ $helper->name }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </dd>
+                                @endif
+
                                 <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Created By</dt>
                                     <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">

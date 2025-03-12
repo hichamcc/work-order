@@ -48,6 +48,20 @@
                                 <x-input-error :messages="$errors->get('assigned_to')" class="mt-2" />
                             </div>
 
+                            <div class="mt-4">
+                                <x-input-label for="helpers" :value="__('Other Workers (Optional)')" />
+                                <select id="helpers" name="helpers[]" multiple class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    @foreach($workers as $worker)
+                                        <option value="{{ $worker->id }}" 
+                                               >
+                                            {{ $worker->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-sm text-gray-500">Hold Ctrl/Cmd to select multiple workers</p>
+                                <x-input-error :messages="$errors->get('helpers')" class="mt-2" />
+                            </div>
+
                             <div>
                                 <x-input-label for="priority" :value="__('Priority')" />
                                 <select id="priority" name="priority" 

@@ -23,7 +23,7 @@
                         </div>
                         <div class="bg-gray-50 rounded-lg p-4">
                             <div class="text-sm font-medium text-gray-500">Total Value</div>
-                            <div class="mt-1 text-2xl font-semibold text-gray-900">${{ number_format($part->stock * $part->cost, 2) }}</div>
+                            <div class="mt-1 text-2xl font-semibold text-gray-900">DKR {{ number_format($part->stock * $part->cost, 2) }}</div>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-4">
                             <div class="text-sm font-medium text-gray-500">Status</div>
@@ -93,12 +93,12 @@
                                     <x-input-label for="cost" :value="__('Cost Per Unit')" />
                                     <div class="mt-1 relative rounded-md shadow-sm">
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                            <span class="text-gray-500 sm:text-sm">DKR</span>
                                         </div>
                                         <x-text-input id="cost" 
                                                     name="cost" 
                                                     type="number" 
-                                                    class="pl-7 block w-full" 
+                                                    class="pl-12 block w-full" 
                                                     :value="old('cost', $part->cost)" 
                                                     required 
                                                     step="0.01" 

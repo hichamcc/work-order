@@ -80,7 +80,11 @@ Route::middleware(['auth'])->group(function () {
             ->name('service-templates.checklist');
             Route::patch('service-templates/{serviceTemplate}/toggle-status', [ServiceTemplateController::class, 'toggleStatus'])
             ->name('service-templates.toggle-status');
-        
+            Route::get('service-templates/{serviceTemplate}/duplicate', [ServiceTemplateController::class, 'duplicate'])
+            ->name('service-templates.duplicate');
+        Route::post('service-templates/{serviceTemplate}/duplicate', [ServiceTemplateController::class, 'storeDuplicate'])
+            ->name('service-templates.store-duplicate');
+                
         
             Route::get('service-templates/{template}/versions', [ServiceTemplateController::class, 'versions'])
             ->name('service-templates.versions');

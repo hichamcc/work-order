@@ -18,19 +18,24 @@ class WorkerDashboardController extends Controller
             ->whereNull('ended_at')
             ->first();
 
-        // Get assigned work orders that are not completed
+       // Get assigned work orders that are not completed
         $activeOrders = WorkOrder::with(['serviceTemplate', 'checklistItems'])
-            ->where('assigned_to', auth()->id())
-            ->whereIn('status', ['new', 'in_progress', 'on_hold'])
-            ->withCount([
-                'checklistItems',
-                'checklistItems as completed_items_count' => function ($query) {
-                    $query->where('is_completed', true);
-                }
-            ])
-            ->latest()
-            ->take(5)
-            ->get();
+        ->where(function ($q) {
+            $q->where('assigned_to', auth()->id())
+            ->orWhereHas('helpers', function ($helperQuery) {
+                $helperQuery->where('users.id', auth()->id());
+            });
+        })
+        ->whereIn('status', ['new', 'in_progress', 'on_hold'])
+        ->withCount([
+            'checklistItems',
+            'checklistItems as completed_items_count' => function ($query) {
+                $query->where('is_completed', true);
+            }
+        ])
+        ->latest()
+        ->take(5)
+        ->get();
 
         // Calculate statistics
         $stats = [
