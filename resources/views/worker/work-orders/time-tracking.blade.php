@@ -28,7 +28,7 @@
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Service Type</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $workOrder->serviceTemplate->name }}</dd>
+                            {{ $workOrder->serviceTemplate ? $workOrder->serviceTemplate->name : 'No template assigned' }}
                         </div>
                     </dl>
                 </div>

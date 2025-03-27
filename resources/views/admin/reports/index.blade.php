@@ -171,7 +171,7 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-lg font-medium text-gray-900">{{ $service->serviceTemplate->name }}</h4>
+                            <h4 class="text-lg font-medium text-gray-900">{{ $service->serviceTemplate ? $service->serviceTemplate->name : 'Without templates'}}  </h4>
                             <span class="text-sm text-gray-500">
                                 {{ $service->total ? round(($service->completed / $service->total) * 100) : 0 }}% completion rate
                             </span>

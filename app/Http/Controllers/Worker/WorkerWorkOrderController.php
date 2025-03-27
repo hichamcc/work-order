@@ -119,9 +119,10 @@ class WorkerWorkOrderController extends Controller
 
     public function startWork(WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403);
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
 
         if ($workOrder->status === 'new') {
             $workOrder->update([

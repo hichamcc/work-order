@@ -13,9 +13,10 @@ class WorkOrderTimeController extends Controller
     public function startWork(WorkOrder $workOrder)
     {
         // Check if work order is assigned to current user
-        if ($workOrder->assigned_to !== auth()->id()) {
-            return back()->with('error', 'You are not assigned to this work order.');
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
 
         // Check if there's already an active timing
         $activeTiming = $workOrder->times()
@@ -48,9 +49,10 @@ class WorkOrderTimeController extends Controller
     public function pauseWork(WorkOrder $workOrder)
     {
         // Check if work order is assigned to current user
-        if ($workOrder->assigned_to !== auth()->id()) {
-            return back()->with('error', 'You are not assigned to this work order.');
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
 
         // Find and end active timing
         $activeTiming = $workOrder->times()
@@ -71,9 +73,10 @@ class WorkOrderTimeController extends Controller
 
     public function timeTrackingView(WorkOrder $workOrder)
     {
-        if ($workOrder->assigned_to !== auth()->id()) {
-            abort(403, 'You are not assigned to this work order.');
+        if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
+            abort(403, 'This work order is not assigned to you.');
         }
+
 
         $activeTiming = $workOrder->times()
             ->where('user_id', auth()->id())
