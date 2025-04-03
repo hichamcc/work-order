@@ -7,6 +7,9 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderTime;
 use App\Models\WorkOrderPart;
 use App\Models\StockAdjustment;
+use App\Models\ServiceTemplate;
+use App\Models\User;
+
 use App\Models\PartInstance;
 use App\Models\Part;
 use Illuminate\Http\Request;
@@ -371,4 +374,81 @@ class WorkerWorkOrderController extends Controller
 
         return back()->with('success', 'Comment added successfully.');
     }
+
+
+
+
+    public function create()
+{
+    // For worker-created orders, we only need templates
+    $templates = ServiceTemplate::where('is_active', true)->get();
+    
+    // No need to pass workers since they can only assign to themselves
+    // Optionally, you could load helpers they can select
+    $potentialHelpers = User::whereHas('role', function($q) {
+        $q->where('slug', 'worker');
+    })
+    ->where('id', '!=', auth()->id()) // Exclude themselves
+    ->get();
+
+    return view('worker.work-orders.create', compact('templates', 'potentialHelpers'));
+}
+
+public function store(Request $request)
+{
+    try {
+        // Custom validation for worker creation
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'service_template_id' => 'nullable|exists:service_templates,id',
+            'priority' => 'required|in:low,medium,high,urgent',
+            'due_date' => 'nullable|date',
+            'helpers' => 'nullable|array',
+            'helpers.*' => 'exists:users,id',
+        ]);
+        
+        DB::beginTransaction();
+        
+        // Extract helpers from the validated data if they exist
+        $helpers = $validated['helpers'] ?? [];
+        unset($validated['helpers']);
+        
+        // Create work order with worker as the assigned_to
+        $workOrder = WorkOrder::create([
+            ...$validated,
+            'assigned_to' => auth()->id(), // Auto-assign to themselves
+            'created_by' => auth()->id(),
+            'status' => 'new', // Or you could set it to 'in_progress' directly
+        ]);
+
+        // If a service template is selected, copy its checklist items
+        if ($request->filled('service_template_id')) {
+            $template = ServiceTemplate::with('checklistItems')->find($request->service_template_id);
+            foreach ($template->checklistItems as $item) {
+                $workOrder->checklistItems()->create([
+                    'checklist_item_id' => $item->id,
+                    'is_completed' => false,
+                ]);
+            }
+        }
+        
+        // Sync helpers (if any)
+        if (!empty($helpers)) {
+            $workOrder->helpers()->sync($helpers);
+        }
+
+        DB::commit();
+
+        return redirect()
+            ->route('worker.work-orders.index')
+            ->with('success', 'Work order created successfully.');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()
+            ->withInput()
+            ->with('error', 'Error creating work order: ' . $e->getMessage());
+    }
+}
 }

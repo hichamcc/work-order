@@ -161,17 +161,19 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/dashboard', [WorkerDashboardController::class, 'index'])->name('dashboard');
 
 
-            Route::controller(WorkOrderController::class)->group(function () {
-                Route::get('/work-orders', 'index')->name('work-orders.index');
-                Route::get('/work-orders/time', 'timeTracking')->name('work-orders.time');
-                Route::get('/work-orders/completed', 'completed')->name('work-orders.completed');
-                Route::get('/work-orders/{workOrder}', 'show')->name('work-orders.show');
-            });
+         
 
             // Work Orders
             Route::controller(WorkerWorkOrderController::class)->group(function () {
                 Route::get('/work-orders', 'index')->name('work-orders.index');
+                Route::get('/work-orders/create', 'create')->name('work-orders.create');
+                Route::post('/work-orders', 'store')->name('work-orders.store');
                 Route::get('/work-orders/{workOrder}', 'show')->name('work-orders.show');
+            });
+
+            Route::controller(WorkOrderController::class)->group(function () {
+                Route::get('/work-orders/time', 'timeTracking')->name('work-orders.time');
+                Route::get('/work-orders/completed', 'completed')->name('work-orders.completed');
             });
          
             // Work Order Time Tracking

@@ -88,13 +88,7 @@ $logout = function (Logout $logout) {
                             {{ __('My Work Orders') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('worker.work-orders.time')" :active="request()->routeIs('worker.work-orders.time')" wire:navigate>
-                            {{ __('Time Tracking') }}
-                        </x-nav-link>
-
-                        <x-nav-link :href="route('worker.work-orders.completed')" :active="request()->routeIs('worker.work-orders.completed')" wire:navigate>
-                            {{ __('Completed Orders') }}
-                        </x-nav-link>
+                  
                     @endif
                 </div>
             </div>
@@ -185,13 +179,7 @@ $logout = function (Logout $logout) {
                 {{ __('My Work Orders') }}
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('worker.work-orders.time')" :active="request()->routeIs('worker.work-orders.time')" wire:navigate>
-                {{ __('Time Tracking') }}
-            </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('worker.work-orders.completed')" :active="request()->routeIs('worker.work-orders.completed')" wire:navigate>
-                {{ __('Completed Orders') }}
-            </x-responsive-nav-link>
             @endif
         </div>
 
