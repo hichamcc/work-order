@@ -127,17 +127,23 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
-                       <!-- Average Time -->
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Average Time</div>
-                            <div class="mt-1 text-xl font-semibold text-indigo-600">
-                                @php
-                                    $hours = floor($worker->total_time / $worker->total_orders / 60);
-                                    $minutes = round($worker->total_time / $worker->total_orders % 60);
-                                @endphp
-                                {{ $hours }}h {{ $minutes }}m
-                            </div>
+               <!-- Average Time -->
+                    <div>
+                        <div class="text-sm font-medium text-gray-500">Average Time</div>
+                        <div class="mt-1 text-xl font-semibold text-indigo-600">
+                            @php
+                                if ($worker->total_orders > 0) {
+                                    $average = $worker->total_time / $worker->total_orders;
+                                    $hours = floor($average / 60);
+                                    $minutes = round($average % 60);
+                                    $result = $hours . 'h ' . $minutes . 'm';
+                                } else {
+                                    $result = 'N/A';
+                                }
+                            @endphp
+                            {{ $result }}
                         </div>
+                    </div>
 
                         <!-- Total Time -->
                         <div>
