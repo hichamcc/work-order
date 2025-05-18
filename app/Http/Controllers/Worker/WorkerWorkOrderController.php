@@ -169,13 +169,12 @@ class WorkerWorkOrderController extends Controller
         if ($workOrder->assigned_to !== auth()->id() && !$workOrder->helpers->contains('id', auth()->id())) {
             abort(403, 'This work order is not assigned to you.');
         }
-
-
+    
         $validated = $request->validate([
             'status' => 'required|in:in_progress,on_hold,completed',
             'hold_reason' => 'required_if:status,on_hold',
         ]);
-
+    
         // Check if all required checklist items are completed when marking as completed
         if ($validated['status'] === 'completed') {
             $incompleteRequired = $workOrder->checklistItems()
@@ -184,19 +183,51 @@ class WorkerWorkOrderController extends Controller
                 })
                 ->where('is_completed', false)
                 ->exists();
-
+    
             if ($incompleteRequired) {
                 return back()->with('error', 'Please complete all required checklist items before marking the work order as completed.');
             }
         }
-
+    
+        // When marking as completed or on hold, stop any active timers
+        if ($validated['status'] === 'completed' || $validated['status'] === 'on_hold') {
+            // Stop timers for the current user
+            $this->stopActiveTimers($workOrder, auth()->id());
+            
+            // If you want to stop timers for ALL workers (including helpers)
+            if ($validated['status'] === 'completed') {
+                // Stop primary worker's timer if it's not the current user
+                if ($workOrder->assigned_to !== auth()->id()) {
+                    $this->stopActiveTimers($workOrder, $workOrder->assigned_to);
+                }
+                
+                // Stop all helpers' timers
+                foreach ($workOrder->helpers as $helper) {
+                    if ($helper->id !== auth()->id()) {
+                        $this->stopActiveTimers($workOrder, $helper->id);
+                    }
+                }
+            }
+        }
+    
         $workOrder->update([
             'status' => $validated['status'],
             'hold_reason' => $validated['status'] === 'on_hold' ? $validated['hold_reason'] : null,
             'completed_at' => $validated['status'] === 'completed' ? now() : null,
         ]);
-
+    
         return back()->with('success', 'Work order status updated successfully.');
+    }
+    
+    /**
+     * Helper method to stop active timers for a specific user on a work order
+     */
+    private function stopActiveTimers(WorkOrder $workOrder, $userId)
+    {
+        $workOrder->times()
+            ->where('user_id', $userId)
+            ->whereNull('ended_at')
+            ->update(['ended_at' => now()]);
     }
 
     public function updateChecklistItem(Request $request, WorkOrder $workOrder, $checklistItemId)
