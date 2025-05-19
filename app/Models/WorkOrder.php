@@ -18,12 +18,16 @@ class WorkOrder extends Model
         'completed_at',
         'due_date',
         'hold_reason',
+        'invoiced',
+
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
         'due_date' => 'datetime',
+        'invoiced' => 'boolean',
+
     ];
 
     public function serviceTemplate()

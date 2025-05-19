@@ -73,7 +73,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('work-orders.assign');
         Route::patch('/work-orders/{workOrder}/status', [WorkOrderController::class, 'updateStatus'])
             ->name('work-orders.update-status');
-    
+        Route::patch('/admin/work-orders/{workOrder}/toggle-invoice', [WorkOrderController::class, 'toggleInvoice'])->name('work-orders.toggle-invoice');
+
         // Service Templates
         Route::resource('service-templates', ServiceTemplateController::class);
         Route::post('/service-templates/{template}/checklist', [ServiceTemplateController::class, 'updateChecklist'])

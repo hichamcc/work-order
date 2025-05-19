@@ -213,4 +213,13 @@ public function update(Request $request, WorkOrder $workOrder)
 
         return back()->with('success', 'Work order status updated successfully.');
     }
+
+    public function toggleInvoice(WorkOrder $workOrder)
+{
+    $workOrder->update([
+        'invoiced' => !$workOrder->invoiced
+    ]);
+    
+    return back()->with('success', 'Invoice status updated successfully.');
+}
 }

@@ -15,7 +15,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-10xl mx-auto sm:px-6 lg:px-8">
             <!-- Search and Filters -->
             <div class="mb-6 bg-white rounded-lg shadow-sm p-6">
                 <form action="{{ route('admin.work-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -82,6 +82,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoiced</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -126,7 +127,7 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="text-gray-900">
+                                        <span class="text-gray-900">
                                             @php
                                                 $totalMinutes = $workOrder->times->sum(function($time) {
                                                     $end = $time->ended_at ?? now();
@@ -134,9 +135,37 @@
                                                 });
                                                 $hours = floor($totalMinutes / 60);
                                                 $minutes = $totalMinutes % 60;
+                                                
+                                                // Get earliest started_at and latest ended_at
+                                                $firstTime = $workOrder->times->sortBy('started_at')->first();
+                                                $lastTime = $workOrder->times->sortByDesc('ended_at')->first();
+                                                
+                                                $startDateTime = $firstTime ? $firstTime->started_at->format('M d, Y g:i A') : 'N/A';
+                                                $endDateTime = ($lastTime && $lastTime->ended_at) 
+                                                    ? $lastTime->ended_at->format('M d, Y g:i A') 
+                                                    : 'Ongoing';
                                             @endphp
-                                            {{ $hours }}h {{ $minutes }}m
+                                            <div class="font-medium">{{ $hours }}h {{ $minutes }}m</div>
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                <div><span class="text-gray-700 font-medium">From:</span> {{ $startDateTime }}</div>
+                                                <div><span class="text-gray-700 font-medium">To:</span> {{ $endDateTime }}</div>
+                                            </div>
                                         </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <form action="{{ route('admin.work-orders.toggle-invoice', $workOrder) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="flex items-center cursor-pointer">
+                                                <span class="relative">
+                                                    <input type="checkbox" class="sr-only peer" {{ $workOrder->invoiced ? 'checked' : '' }} readonly>
+                                                    <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                                                </span>
+                                                <span class="ml-2 text-sm {{ $workOrder->invoiced ? 'text-green-600 font-medium' : 'text-gray-500' }}">
+                                                    {{ $workOrder->invoiced ? 'Invoiced' : 'Not Invoiced' }}
+                                                </span>
+                                            </button>
+                                        </form>
                                     </td>
 
 
