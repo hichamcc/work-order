@@ -98,138 +98,152 @@
                 </div>
             </div>
 
-       <!-- Worker Performance -->
-<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-    <div class="p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Worker Performance</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach($workerPerformance as $worker)
-                <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                    <div class="flex items-center mb-4">
-                        <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <span class="text-indigo-700 font-medium">{{ substr($worker->name, 0, 2) }}</span>
-                        </div>
-                        <div class="ml-3">
-                            <h4 class="text-lg font-medium text-gray-900">{{ $worker->name }}</h4>
-                            <span class="text-sm text-gray-500">
-                                {{ $worker->total_orders ? round(($worker->completed_orders / $worker->total_orders) * 100) : 0 }}% completion rate
-                            </span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Total Orders</div>
-                            <div class="mt-1 text-xl font-semibold text-gray-900">{{ $worker->total_orders }}</div>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Completed</div>
-                            <div class="mt-1 text-xl font-semibold text-green-600">{{ $worker->completed_orders }}</div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-               <!-- Average Time -->
-                    <div>
-                        <div class="text-sm font-medium text-gray-500">Average Time</div>
-                        <div class="mt-1 text-xl font-semibold text-indigo-600">
-                            @php
-                                if ($worker->total_orders > 0) {
-                                    $average = $worker->total_time / $worker->total_orders;
-                                    $hours = floor($average / 60);
-                                    $minutes = round($average % 60);
-                                    $result = $hours . 'h ' . $minutes . 'm';
-                                } else {
-                                    $result = 'N/A';
-                                }
-                            @endphp
-                            {{ $result }}
-                        </div>
-                    </div>
+            <!-- Worker Performance -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Worker Performance</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach($workerPerformance as $worker)
+                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center mb-4">
+                                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                        <span class="text-indigo-700 font-medium">{{ substr($worker->name, 0, 2) }}</span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h4 class="text-lg font-medium text-gray-900">{{ $worker->name }}</h4>
+                                        <span class="text-sm text-gray-500">
+                                            {{ $worker->total_orders ? round(($worker->completed_orders / $worker->total_orders) * 100) : 0 }}% completion rate
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Total Orders</div>
+                                        <div class="mt-1 text-xl font-semibold text-gray-900">{{ $worker->total_orders }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Completed</div>
+                                        <div class="mt-1 text-xl font-semibold text-green-600">{{ $worker->completed_orders }}</div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <!-- Average Time -->
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Average Time</div>
+                                        <div class="mt-1 text-xl font-semibold text-indigo-600">
+                                            @php
+                                                if ($worker->total_orders > 0 && $worker->total_time > 0) {
+                                                    $average = $worker->total_time / $worker->total_orders;
+                                                    $hours = floor($average / 60);
+                                                    $minutes = round($average % 60);
+                                                    $result = $hours . 'h ' . $minutes . 'm';
+                                                } else {
+                                                    $result = 'N/A';
+                                                }
+                                            @endphp
+                                            {{ $result }}
+                                        </div>
+                                    </div>
 
-                        <!-- Total Time -->
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Total Time</div>
-                            <div class="mt-1 text-xl font-semibold text-indigo-600">
-                                @php
-                                    $hours = floor($worker->total_time / 60);
-                                    $minutes = round($worker->total_time % 60);
-                                @endphp
-                                {{ $hours }}h {{ $minutes }}m
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-
-<!-- Service Analysis -->
-<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-    <div class="p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Service Analysis</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach($serviceDistribution as $service)
-                <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                    <div class="flex items-center mb-4">
-                        <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <svg class="h-6 w-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h4 class="text-lg font-medium text-gray-900">{{ $service->serviceTemplate ? $service->serviceTemplate->name : 'Without templates'}}  </h4>
-                            <span class="text-sm text-gray-500">
-                                {{ $service->total ? round(($service->completed / $service->total) * 100) : 0 }}% completion rate
-                            </span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Total Orders</div>
-                            <div class="mt-1 text-xl font-semibold text-gray-900">{{ $service->total }}</div>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Completed</div>
-                            <div class="mt-1 text-xl font-semibold text-green-600">{{ $service->completed }}</div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-
-                        <div >
-                            <div class="text-sm font-medium text-gray-500">Average Time</div>
-                            <div class="mt-1 text-xl font-semibold text-indigo-600">
-                                @php
-                                    $hours = floor($service->total_time / $service->total  / 60);
-                                    $minutes = round($service->total_time  / $service->total % 60);
-                                @endphp
-                                {{ $hours }}h {{ $minutes }}m
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-500">Total Time</div>
-                            <div class="mt-1 text-xl font-semibold text-indigo-600">
-                                @php
-                                    $hours = floor($service->total_time / 60);
-                                    $minutes = round($service->total_time % 60);
-                                @endphp
-                                {{ $hours }}h {{ $minutes }}m
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-span-2 mt-2">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-green-600 h-2 rounded-full" 
-                                     style="width: {{ $service->total ? ($service->completed / $service->total) * 100 : 0 }}%">
+                                    <!-- Total Time -->
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Total Time</div>
+                                        <div class="mt-1 text-xl font-semibold text-indigo-600">
+                                            @php
+                                                if ($worker->total_time > 0) {
+                                                    $hours = floor($worker->total_time / 60);
+                                                    $minutes = round($worker->total_time % 60);
+                                                    $result = $hours . 'h ' . $minutes . 'm';
+                                                } else {
+                                                    $result = '0h 0m';
+                                                }
+                                            @endphp
+                                            {{ $result }}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
-            @endforeach
-        </div>
-    </div>
-</div>
+            </div>
+
+            <!-- Service Analysis -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Service Analysis</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach($serviceDistribution as $service)
+                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center mb-4">
+                                    <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                        <svg class="h-6 w-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h4 class="text-lg font-medium text-gray-900">{{ $service->serviceTemplate ? $service->serviceTemplate->name : 'Without templates' }}</h4>
+                                        <span class="text-sm text-gray-500">
+                                            {{ $service->total ? round(($service->completed / $service->total) * 100) : 0 }}% completion rate
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Total Orders</div>
+                                        <div class="mt-1 text-xl font-semibold text-gray-900">{{ $service->total }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Completed</div>
+                                        <div class="mt-1 text-xl font-semibold text-green-600">{{ $service->completed }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Average Time</div>
+                                        <div class="mt-1 text-xl font-semibold text-indigo-600">
+                                            @php
+                                                if ($service->total > 0 && $service->total_time > 0) {
+                                                    $average = $service->total_time / $service->total;
+                                                    $hours = floor($average / 60);
+                                                    $minutes = round($average % 60);
+                                                    $result = $hours . 'h ' . $minutes . 'm';
+                                                } else {
+                                                    $result = 'N/A';
+                                                }
+                                            @endphp
+                                            {{ $result }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-500">Total Time</div>
+                                        <div class="mt-1 text-xl font-semibold text-indigo-600">
+                                            @php
+                                                if ($service->total_time > 0) {
+                                                    $hours = floor($service->total_time / 60);
+                                                    $minutes = round($service->total_time % 60);
+                                                    $result = $hours . 'h ' . $minutes . 'm';
+                                                } else {
+                                                    $result = '0h 0m';
+                                                }
+                                            @endphp
+                                            {{ $result }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 mt-2">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-600 h-2 rounded-full" 
+                                            style="width: {{ $service->total ? ($service->completed / $service->total) * 100 : 0 }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>
