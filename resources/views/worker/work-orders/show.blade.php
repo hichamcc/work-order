@@ -318,68 +318,80 @@
                         </form>
                     @endif
 
-                    <!-- Parts List -->
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead>
+                    @php
+                    // Pre-calculate serial number groupings for all tracked parts
+                    $serialGroupings = [];
+                    
+                    foreach($workOrder->parts->where('part.track_serials', true)->groupBy('part_id') as $partId => $workOrderParts) {
+                        $allInstances = \App\Models\PartInstance::where('part_id', $partId)
+                            ->where('work_order_id', $workOrder->id)
+                            ->orderBy('id')
+                            ->get();
+                        
+                        $usedInstances = 0;
+                        foreach($workOrderParts as $workOrderPart) {
+                            $serialGroupings[$workOrderPart->id] = $allInstances->slice($usedInstances, $workOrderPart->quantity);
+                            $usedInstances += $workOrderPart->quantity;
+                        }
+                    }
+                @endphp
+                
+                <!-- Parts List -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Part</th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Serial #</th>
+                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($workOrder->parts as $workOrderPart)
                                 <tr>
-                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Part</th>
-                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Serial #</th>
-                                    <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                    <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($workOrder->parts as $workOrderPart)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $workOrderPart->part->name }}
-                                            @if($workOrderPart->part->track_serials)
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                    Serial Tracked
-                                                </span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-900">
-                                            @if($workOrderPart->part->track_serials)
-                                                <div class="text-sm">
-                                                    @php
-                                                        $instances = \App\Models\PartInstance::where('part_id', $workOrderPart->part_id)
-                                                            ->where('work_order_id', $workOrder->id)
-                                                            ->get();
-                                                    @endphp
-                                                    
-                                                    @foreach($instances as $instance)
-                                                        <div class="mb-1">{{ $instance->serial_number }}</div>
-                                                    @endforeach
-                                                </div>
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            {{ $workOrderPart->quantity }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            DKR {{ number_format($workOrderPart->cost_at_time * $workOrderPart->quantity, 2) }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900 text-right">
-                                        Total Cost:
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $workOrderPart->part->name }}
+                                        @if($workOrderPart->part->track_serials)
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                Serial Tracked
+                                            </span>
+                                        @endif
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                                        DKR {{ number_format($workOrder->parts->sum(function($part) {
-                                            return $part->cost_at_time * $part->quantity;
-                                        }), 2) }}
+                                    <td class="px-6 py-4 text-sm text-gray-900">
+                                        @if($workOrderPart->part->track_serials)
+                                            <div class="text-sm">
+                                                @foreach($serialGroupings[$workOrderPart->id] ?? [] as $instance)
+                                                    <div class="mb-1">{{ $instance->serial_number }}</div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                        {{ $workOrderPart->quantity }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                        DKR {{ number_format($workOrderPart->cost_at_time * $workOrderPart->quantity, 2) }}
                                     </td>
                                 </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                            @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                                    Total Cost:
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                                    DKR {{ number_format($workOrder->parts->sum(function($part) {
+                                        return $part->cost_at_time * $part->quantity;
+                                    }), 2) }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
                 </div>
             </div>
 
