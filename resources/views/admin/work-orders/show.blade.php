@@ -124,7 +124,25 @@
                         </div>
                     </div>
 
-              <!-- Parts Used -->
+                    @php
+                    // Pre-calculate serial number groupings for all tracked parts
+                    $serialGroupings = [];
+                    
+                    foreach($workOrder->parts->where('part.track_serials', true)->groupBy('part_id') as $partId => $workOrderParts) {
+                        $allInstances = \App\Models\PartInstance::where('part_id', $partId)
+                            ->where('work_order_id', $workOrder->id)
+                            ->orderBy('id')
+                            ->get();
+                        
+                        $usedInstances = 0;
+                        foreach($workOrderParts as $workOrderPart) {
+                            $serialGroupings[$workOrderPart->id] = $allInstances->slice($usedInstances, $workOrderPart->quantity);
+                            $usedInstances += $workOrderPart->quantity;
+                        }
+                    }
+                @endphp
+                
+                <!-- Parts Used -->
                 <div class="bg-white overflow-hidden shadow-sm rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Parts Used</h3>
@@ -155,9 +173,7 @@
                                                 <td class="px-6 py-4 text-sm text-gray-900">
                                                     @if($part->part->track_serials)
                                                         @php
-                                                            $instances = \App\Models\PartInstance::where('part_id', $part->part_id)
-                                                                ->where('work_order_id', $workOrder->id)
-                                                                ->get();
+                                                            $instances = $serialGroupings[$part->id] ?? collect();
                                                         @endphp
                                                         
                                                         @if($instances->count() > 0)
