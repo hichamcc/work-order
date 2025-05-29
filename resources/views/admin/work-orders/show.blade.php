@@ -308,8 +308,16 @@
                                                 </div>
                                             </div>
                                             <div class="text-xs text-gray-500 mt-1">
-                                                {{ $time->started_at->format('M d, Y H:i') }}
-                                               
+                                                <div class="flex items-center space-x-2">
+                                                    <span>Started: {{ $time->started_at->format('M d, Y H:i') }}</span>
+                                                    @if($time->ended_at)
+                                                        <span>•</span>
+                                                        <span>Ended: {{ $time->ended_at->format('M d, Y H:i') }}</span>
+                                                    @else
+                                                        <span>•</span>
+                                                        <span class="text-green-600 font-medium">Ongoing</span>
+                                                    @endif
+                                                </div>
                                             </div>
                                             @if($time->notes)
                                                 <div class="text-sm text-gray-600 mt-2">

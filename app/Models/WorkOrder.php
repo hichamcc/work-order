@@ -30,6 +30,9 @@ class WorkOrder extends Model
 
     ];
 
+
+    
+
     public function serviceTemplate()
     {
         return $this->belongsTo(ServiceTemplate::class);
