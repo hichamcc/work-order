@@ -88,15 +88,44 @@
                                             </button>
                                         </form>
                                     @else
-                                        <form action="{{ route('worker.work-orders.pause-work', $workOrder) }}" method="POST" class="inline">
+                                        <button id="pauseWorkBtn" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
+                                            Pause Work
+                                        </button>
+                                    
+                                        <!-- Hidden form for pausing work -->
+                                        <form id="pauseWorkForm" action="{{ route('worker.work-orders.pause-work', $workOrder) }}" method="POST" style="display: none;">
                                             @csrf
-                                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
-                                                Pause Work
-                                            </button>
                                         </form>
                                     @endif
                                 </div>
                             @endif
+
+                            <!-- Completion Popup Modal -->
+                            <div id="completionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+                                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                                    <div class="mt-3 text-center">
+                                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                                            <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                            </svg>
+                                        </div>
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Work Paused Successfully</h3>
+                                        <div class="mt-2 px-7 py-3">
+                                            <p class="text-sm text-gray-500">
+                                                Your work has been paused. Would you like to mark this project as completed?
+                                            </p>
+                                        </div>
+                                        <div class="items-center px-4 py-3 flex justify-center space-x-4">
+                                            <button id="markCompleted" class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md w-auto shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                                                Mark as Completed
+                                            </button>
+                                            <button id="closeModal" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-auto shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                                                Not Yet
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                            <!-- Time Entries -->
                             <div class="space-y-2">
@@ -565,38 +594,38 @@
 
                         <!-- Status Update Section -->
                         @if($workOrder->status !== 'completed')
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-6">
-                    <div class="p-6">
-                        <h3 class="text-lg font-semibold mb-4">Update Status</h3>
-                        <form action="{{ route('worker.work-orders.update-status', $workOrder) }}" method="POST">
-                            @csrf
-                            @method('PATCH')
-                            <div class="space-y-4">
-                                <div>
-                                    <select name="status" required 
-                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                        <option value="in_progress" @selected($workOrder->status === 'in_progress')>In Progress</option>
-                                        <option value="on_hold" @selected($workOrder->status === 'on_hold')>On Hold</option>
-                                        <option value="completed" @selected($workOrder->status === 'completed')>Completed</option>
-                                    </select>
-                                </div>
-                                
-                                <div id="holdReasonContainer" class="@if($workOrder->status !== 'on_hold') hidden @endif">
-                                    <label for="hold_reason" class="block text-sm font-medium text-gray-700">Hold Reason</label>
-                                    <textarea id="hold_reason"
-                                              name="hold_reason" 
-                                              rows="3" 
-                                              class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                              placeholder="Please provide a reason for putting the work order on hold...">{{ $workOrder->hold_reason }}</textarea>
-                                </div>
-
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-                                    Update Status
-                                </button>
+                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-6">
+                            <div class="p-6">
+                                <h3 class="text-lg font-semibold mb-4">Update Status</h3>
+                                <form id="statusForm" action="{{ route('worker.work-orders.update-status', $workOrder) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="space-y-4">
+                                        <div>
+                                            <select id="statusSelect" name="status" required 
+                                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                <option value="in_progress" @selected($workOrder->status === 'in_progress')>In Progress</option>
+                                                <option value="on_hold" @selected($workOrder->status === 'on_hold')>On Hold</option>
+                                                <option value="completed" @selected($workOrder->status === 'completed')>Completed</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div id="holdReasonContainer" class="@if($workOrder->status !== 'on_hold') hidden @endif">
+                                            <label for="hold_reason" class="block text-sm font-medium text-gray-700">Hold Reason</label>
+                                            <textarea id="hold_reason"
+                                                      name="hold_reason" 
+                                                      rows="3" 
+                                                      class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                      placeholder="Please provide a reason for putting the work order on hold...">{{ $workOrder->hold_reason }}</textarea>
+                                        </div>
+                        
+                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                            Update Status
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                        </form>
-                    </div>
-                </div>
+                        </div>
             @endif
         </div>
     </div>
@@ -650,6 +679,240 @@
             });
         });
     </script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pauseWorkBtn = document.getElementById('pauseWorkBtn');
+    const completionModal = document.getElementById('completionModal');
+    const markCompletedBtn = document.getElementById('markCompleted');
+    const closeModalBtn = document.getElementById('closeModal');
+    const pauseWorkForm = document.getElementById('pauseWorkForm');
+    const statusSelect = document.getElementById('statusSelect');
+    const statusForm = document.getElementById('statusForm');
+    const holdReasonContainer = document.getElementById('holdReasonContainer');
+
+    // Handle pause work button click
+    if (pauseWorkBtn) {
+        pauseWorkBtn.addEventListener('click', function() {
+            // Submit the pause work form first
+            fetch(pauseWorkForm.action, {
+                method: 'POST',
+                body: new FormData(pauseWorkForm),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            }).then(response => {
+                if (response.ok) {
+                    // Show the completion modal after successful pause
+                    completionModal.classList.remove('hidden');
+                } else {
+                    // Handle error - you might want to show an error message
+                    console.error('Failed to pause work');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    }
+
+    // Handle mark as completed button
+    if (markCompletedBtn) {
+        markCompletedBtn.addEventListener('click', function() {
+            // Set status to completed
+            statusSelect.value = 'completed';
+            
+            // Hide hold reason if it was visible
+            holdReasonContainer.classList.add('hidden');
+            
+            // Hide the modal
+            completionModal.classList.add('hidden');
+            
+            // Submit the status form
+            statusForm.submit();
+        });
+    }
+
+    // Handle close modal button
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+            completionModal.classList.add('hidden');
+        });
+    }
+
+    // Close modal when clicking outside
+    if (completionModal) {
+        completionModal.addEventListener('click', function(e) {
+            if (e.target === completionModal) {
+                completionModal.classList.add('hidden');
+            }
+        });
+    }
+
+    // Handle status dropdown changes for hold reason
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'on_hold') {
+                holdReasonContainer.classList.remove('hidden');
+            } else {
+                holdReasonContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !completionModal.classList.contains('hidden')) {
+            completionModal.classList.add('hidden');
+        }
+    });
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const pauseWorkBtn = document.getElementById('pauseWorkBtn');
+        const completionModal = document.getElementById('completionModal');
+        const markCompletedBtn = document.getElementById('markCompleted');
+        const closeModalBtn = document.getElementById('closeModal');
+        const pauseWorkForm = document.getElementById('pauseWorkForm');
+        const statusSelect = document.getElementById('statusSelect');
+        const statusForm = document.getElementById('statusForm');
+        const holdReasonContainer = document.getElementById('holdReasonContainer');
+    
+        let workPaused = false; // Track if work has been paused
+    
+        // Handle pause work button click
+        if (pauseWorkBtn) {
+            pauseWorkBtn.addEventListener('click', function() {
+                // Show the modal first to ask user's intention
+                completionModal.classList.remove('hidden');
+            });
+        }
+    
+        // Handle mark as completed button
+        if (markCompletedBtn) {
+            markCompletedBtn.addEventListener('click', function() {
+                // First pause the work, then mark as completed
+                fetch(pauseWorkForm.action, {
+                    method: 'POST',
+                    body: new FormData(pauseWorkForm),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        // Set status to completed
+                        statusSelect.value = 'completed';
+                        
+                        // Hide hold reason if it was visible
+                        holdReasonContainer.classList.add('hidden');
+                        
+                        // Hide the modal
+                        completionModal.classList.add('hidden');
+                        
+                        // Submit the status form
+                        statusForm.submit();
+                    } else {
+                        console.error('Failed to pause work');
+                        alert('Failed to pause work. Please try again.');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            });
+        }
+    
+        // Handle close modal button (Not Yet)
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', function() {
+                // Just pause the work without marking as completed
+                fetch(pauseWorkForm.action, {
+                    method: 'POST',
+                    body: new FormData(pauseWorkForm),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        // Hide the modal and reload the page to reflect paused state
+                        completionModal.classList.add('hidden');
+                        window.location.reload();
+                    } else {
+                        console.error('Failed to pause work');
+                        alert('Failed to pause work. Please try again.');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            });
+        }
+    
+        // Close modal when clicking outside (also pause work)
+        if (completionModal) {
+            completionModal.addEventListener('click', function(e) {
+                if (e.target === completionModal) {
+                    // Same as "Not Yet" - pause work without completing
+                    fetch(pauseWorkForm.action, {
+                        method: 'POST',
+                        body: new FormData(pauseWorkForm),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            completionModal.classList.add('hidden');
+                            window.location.reload();
+                        } else {
+                            console.error('Failed to pause work');
+                        }
+                    }).catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        }
+    
+        // Handle status dropdown changes for hold reason
+        if (statusSelect) {
+            statusSelect.addEventListener('change', function() {
+                if (this.value === 'on_hold') {
+                    holdReasonContainer.classList.remove('hidden');
+                } else {
+                    holdReasonContainer.classList.add('hidden');
+                }
+            });
+        }
+    
+        // Close modal with Escape key (also pause work)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !completionModal.classList.contains('hidden')) {
+                // Same as "Not Yet" - pause work without completing
+                fetch(pauseWorkForm.action, {
+                    method: 'POST',
+                    body: new FormData(pauseWorkForm),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        completionModal.classList.add('hidden');
+                        window.location.reload();
+                    } else {
+                        console.error('Failed to pause work');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    });
+    </script>
     @endpush
 
     @if(session('success'))
@@ -669,4 +932,7 @@
             {{ session('error') }}
         </div>
     @endif
+
+
+
 </x-app-layout> 
