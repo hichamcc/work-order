@@ -52,7 +52,7 @@
                                                                 <p class="text-sm text-gray-500">Completed</p>
                                                             </div>
                                                             <div class="text-sm text-gray-500">
-                                                                <time datetime="{{ $workOrder->completed_at }}">{{ $workOrder->completed_at->format('M d, Y H:i') }}</time>
+                                                                <time datetime="{{ $workOrder->completed_at }}">{{ $workOrder->completed_at->inApplicationTimezone()->format('M d, Y H:i') }}</time>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -76,7 +76,7 @@
                                                                 <p class="text-sm text-gray-500">Started Work</p>
                                                             </div>
                                                             <div class="text-sm text-gray-500">
-                                                                <time datetime="{{ $workOrder->started_at }}">{{ $workOrder->started_at->format('M d, Y H:i') }}</time>
+                                                                <time datetime="{{ $workOrder->started_at }}">{{ $workOrder->started_at->inApplicationTimezone()->format('M d, Y H:i') }}</time>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -100,7 +100,7 @@
                                                             <p class="text-sm text-gray-500">Created</p>
                                                         </div>
                                                         <div class="text-sm text-gray-500">
-                                                            <time datetime="{{ $workOrder->created_at }}">{{ $workOrder->created_at->format('M d, Y H:i') }}</time>
+                                                            <time datetime="{{ $workOrder->created_at }}">{{ $workOrder->created_at->inApplicationTimezone()->format('M d, Y H:i') }}</time>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -297,7 +297,7 @@
                                     <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                                         {{ $workOrder->createdBy->name }}
                                         <div class="text-xs text-gray-500">
-                                            {{ $workOrder->created_at->format('M d, Y H:i') }}
+                                            {{ $workOrder->created_at->inApplicationTimezone()->format('M d, Y H:i') }}
                                         </div>
                                     </dd>
                                 </div>
@@ -325,10 +325,10 @@
                                             </div>
                                             <div class="text-xs text-gray-500 mt-1">
                                                 <div class="flex items-center space-x-2">
-                                                    <span>Started: {{ $time->started_at->format('M d, Y H:i') }}</span>
+                                                    <span>Started: {{ $time->started_at->inApplicationTimezone()->format('M d, Y H:i') }}</span>
                                                     @if($time->ended_at)
                                                         <span>•</span>
-                                                        <span>Ended: {{ $time->ended_at->format('M d, Y H:i') }}</span>
+                                                        <span>Ended: {{ $time->ended_at->inApplicationTimezone()->format('M d, Y H:i') }}</span>
                                                     @else
                                                         <span>•</span>
                                                         <span class="text-green-600 font-medium">Ongoing</span>

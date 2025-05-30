@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use LivewireUI\Modal\Modal;
+use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,5 +26,10 @@ class AppServiceProvider extends ServiceProvider
         Livewire::listen('modal', function ($component, $arguments = []) {
             return Modal::dispatch($component, $arguments);
         });
+
+
+        Carbon::macro('inApplicationTimezone',function(){
+            return $this->tz(config('app.timezone_display'));
+         });
     }
 }

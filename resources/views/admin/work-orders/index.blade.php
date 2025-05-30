@@ -140,9 +140,9 @@
                                                 $firstTime = $workOrder->times->sortBy('started_at')->first();
                                                 $lastTime = $workOrder->times->sortByDesc('ended_at')->first();
                                                 
-                                                $startDateTime = $firstTime ? $firstTime->started_at->format('M d, Y g:i A') : 'N/A';
+                                                $startDateTime = $firstTime ? $firstTime->started_at->inApplicationTimezone()->format('M d, Y g:i A') : 'N/A';
                                                 $endDateTime = ($lastTime && $lastTime->ended_at) 
-                                                    ? $lastTime->ended_at->format('M d, Y g:i A') 
+                                                    ? $lastTime->ended_at->inApplicationTimezone()->format('M d, Y g:i A') 
                                                     : 'Ongoing';
                                             @endphp
                                             <div class="font-medium">{{ $hours }}h {{ $minutes }}m</div>

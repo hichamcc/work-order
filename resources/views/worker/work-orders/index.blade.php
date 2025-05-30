@@ -110,7 +110,7 @@
 
                                             @if($workOrder->started_at)
                                                 <span class="inline-flex items-center text-xs text-gray-500">
-                                                    Started: {{ $workOrder->started_at->format('M d, Y H:i') }}
+                                                    Started: {{ $workOrder->started_at->inApplicationTimezone()->format('M d, Y H:i') }}
                                                 </span>
                                             @endif
                                         </div>

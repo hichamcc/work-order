@@ -39,7 +39,7 @@
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500">Due Date</dt>
                                     <dd class="mt-1 text-sm text-gray-900">
-                                        {{ $workOrder->due_date ? $workOrder->due_date->format('M d, Y H:i') : 'No due date set' }}
+                                        {{ $workOrder->due_date ? $workOrder->due_date->inApplicationTimezone()->format('M d, Y H:i') : 'No due date set' }}
                                     </dd>
                                 </div>
                                 <div >
@@ -66,7 +66,7 @@
                                             <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                                                 {{ $workOrder->createdBy->name }}
                                                 <div class="text-xs text-gray-500">
-                                                    {{ $workOrder->created_at->format('M d, Y H:i') }}
+                                                    {{ $workOrder->created_at->inApplicationTimezone()->format('M d, Y H:i') }}
                                                 </div>
                                             </dd>
                                         </div>
@@ -132,10 +132,10 @@
                             @foreach($workOrder->times as $time)
                                 <div class="text-sm bg-gray-50 p-2 rounded">
                                     <div class="flex justify-between">
-                                        <span>{{ $time->started_at->format('M d, Y H:i') }}</span>
+                                        <span>{{ $time->started_at->inApplicationTimezone()->format('M d, Y H:i') }}</span>
                                         <span>
                                             @if($time->ended_at)
-                                                {{ $time->ended_at->format('H:i') }}
+                                                {{ $time->ended_at->inApplicationTimezone()->format('H:i') }}
                                                 @php
                                                     $diffInSeconds = $time->started_at->diffInSeconds($time->ended_at);
                                                     $hours = floor($diffInSeconds / 3600);
