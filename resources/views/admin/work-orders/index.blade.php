@@ -18,7 +18,7 @@
         <div class="max-w-10xl mx-auto sm:px-6 lg:px-8">
             <!-- Search and Filters -->
             <div class="mb-6 bg-white rounded-lg shadow-sm p-6">
-                <form action="{{ route('admin.work-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form action="{{ route('admin.work-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
                         <x-input-label for="search" :value="__('Search')" />
                         <x-text-input id="search" name="search" type="text" class="mt-1 block w-full" 
@@ -36,7 +36,22 @@
                             @endforeach
                         </select>
                     </div>
-
+            
+                    <div>
+                        <x-input-label for="customer" :value="__('Customer')" />
+                        <select name="customer" id="customer" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <option value="">All Customers</option>
+                            @foreach($customers as $customer)
+                                <option value="{{ $customer->id }}" {{ request('customer') == $customer->id ? 'selected' : '' }}>
+                                    {{ $customer->name }}
+                                    @if($customer->is_default)
+                                        (Default)
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+            
                     <div>
                         <x-input-label for="status" :value="__('Status')" />
                         <select name="status" id="status" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
@@ -47,7 +62,7 @@
                             <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
                         </select>
                     </div>
-
+            
                     <div class="flex items-end space-x-2">
                         <x-primary-button type="submit">
                             {{ __('Filter') }}

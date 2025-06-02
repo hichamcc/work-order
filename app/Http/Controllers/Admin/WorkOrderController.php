@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\WorkOrder;
 use App\Models\User;
+use App\Models\Customer;
+
 use App\Models\ServiceTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +16,7 @@ class WorkOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WorkOrder::with(['assignedTo', 'serviceTemplate', 'checklistItems'])
+        $query = WorkOrder::with(['assignedTo', 'serviceTemplate', 'checklistItems','customer'])
             ->withCount(['checklistItems', 'checklistItems as completed_items_count' => function ($query) {
                 $query->where('is_completed', true);
             }]);
@@ -41,6 +43,11 @@ class WorkOrderController extends Controller
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
+            // Customer filter
+            if ($request->filled('customer')) {
+                $query->where('customer_id', $request->customer);
+            }
+
 
         // Sort
         $sortField = $request->input('sort', 'created_at');
@@ -52,7 +59,11 @@ class WorkOrderController extends Controller
             $q->where('slug', 'worker');
         })->get();
 
-        return view('admin.work-orders.index', compact('workOrders', 'workers'));
+        $customers = Customer::orderBy('is_default', 'desc')
+        ->orderBy('name')
+        ->get();
+
+        return view('admin.work-orders.index', compact('workOrders', 'workers' , 'customers'));
     }
 
     public function create()
