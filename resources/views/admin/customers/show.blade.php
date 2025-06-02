@@ -151,7 +151,7 @@
                                                 {{ $workOrder->created_at->format('M j, Y') }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <a href="{{ route('admin.worker.work-orders.show', $workOrder) }}" 
+                                                <a href="{{ route('admin.work-orders.show', $workOrder) }}" 
                                                    class="text-indigo-600 hover:text-indigo-900">
                                                     View
                                                 </a>
