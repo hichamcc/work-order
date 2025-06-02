@@ -62,6 +62,27 @@
                                 <x-input-error :messages="$errors->get('helpers')" class="mt-2" />
                             </div>
 
+                              <!-- Customer Selection -->
+                              <div>
+                                <x-input-label for="customer_id" :value="__('Customer')" />
+                                <select name="customer_id" 
+                                        id="customer_id" 
+                                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        required>
+                                    <option value="">Select a customer</option>
+                                    @foreach(\App\Models\Customer::orderBy('is_default', 'desc')->orderBy('name')->get() as $customer)
+                                        <option value="{{ $customer->id }}" 
+                                                {{ old('customer_id', $workOrder->customer_id ?? \App\Models\Customer::getDefault()?->id) == $customer->id ? 'selected' : '' }}>
+                                            {{ $customer->name }}
+                                            @if($customer->is_default)
+                                                (Default)
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('customer_id')" class="mt-2" />
+                            </div>
+
                             <div>
                                 <x-input-label for="priority" :value="__('Priority')" />
                                 <select id="priority" name="priority" 

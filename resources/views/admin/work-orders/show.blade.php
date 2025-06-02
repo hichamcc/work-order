@@ -27,6 +27,11 @@
                     <div class="bg-white overflow-hidden shadow-sm rounded-lg">
                         <div class="p-6">
                             <div class="prose max-w-none">
+                                <h3 class="text-lg font-medium text-gray-900">Customer</h3>
+                                <p class="text-gray-600">{{ ($workOrder->customer ? $workOrder->customer->name : 'N/A') }}</p>
+                            </div>
+
+                            <div class="prose max-w-none">
                                 <h3 class="text-lg font-medium text-gray-900">Description</h3>
                                 <p class="text-gray-600">{{ $workOrder->description }}</p>
                             </div>

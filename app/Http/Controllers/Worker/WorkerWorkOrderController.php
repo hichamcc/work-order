@@ -431,6 +431,7 @@ public function store(Request $request)
         // Custom validation for worker creation
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'customer_id' =>'nullable',
             'description' => 'nullable|string',
             'service_template_id' => 'nullable|exists:service_templates,id',
             'priority' => 'required|in:low,medium,high,urgent',

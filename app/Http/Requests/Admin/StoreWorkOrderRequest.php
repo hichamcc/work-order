@@ -16,6 +16,7 @@ class StoreWorkOrderRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'min:3', 'max:255'],
             'description' => ['required', 'string', 'min:10'],
+            'customer_id' => ['nullable', 'exists:customers,id'],
             'service_template_id' => ['nullable', 'exists:service_templates,id'],
             'assigned_to' => ['required', 'exists:users,id'],
             'helpers' => 'nullable|array',

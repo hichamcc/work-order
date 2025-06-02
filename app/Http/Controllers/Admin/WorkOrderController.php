@@ -155,6 +155,7 @@ public function update(Request $request, WorkOrder $workOrder)
 {
     $validated = $request->validate([
         'title' => 'required|string|max:255',
+        'customer_id'=>'nullable',
         'description' => 'nullable|string',
         'assigned_to' => 'required|exists:users,id',
         'priority' => 'required|in:low,medium,high,urgent',

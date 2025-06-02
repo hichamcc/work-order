@@ -5,6 +5,8 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Work Order Details
             </h2>
+
+
             <!-- Status Badge -->
             <span class="px-4 py-2 rounded-full text-sm font-semibold 
                 @if($workOrder->status === 'new') bg-blue-100 text-blue-800
@@ -27,11 +29,20 @@
                         <div>
                             <h3 class="text-lg font-semibold mb-4">Work Order Information</h3>
                             <dl class="grid grid-cols-1 gap-3">
+                                
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Customer</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">
+                                        {{ ($workOrder->customer ? $workOrder->customer->name : 'N/A') }}
+                                    </dd> 
+                              </div>
+
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500">Service Type</dt>
                                     <dd class="mt-1 text-sm text-gray-900">
                                         {{ $workOrder->serviceTemplate ? $workOrder->serviceTemplate->name : 'No template assigned' }}
-                                    </dd>                                </div>
+                                    </dd> 
+                              </div>
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500">Description</dt>
                                     <dd class="mt-1 text-sm text-gray-900">{{ $workOrder->description }}</dd>

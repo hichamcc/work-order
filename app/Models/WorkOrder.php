@@ -19,6 +19,8 @@ class WorkOrder extends Model
         'due_date',
         'hold_reason',
         'invoiced',
+        'customer_id',
+
 
     ];
 
@@ -93,5 +95,17 @@ public function allWorkers()
     
     return $helpers;
 }
+/**
+ * Get the customer that owns the work order.
+ */
+public function customer()
+{
+    return $this->belongsTo(Customer::class);
+}
 
+// Optional: Add a scope to filter by customer
+public function scopeForCustomer($query, $customerId)
+{
+    return $query->where('customer_id', $customerId);
+}
 }

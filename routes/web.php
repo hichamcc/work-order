@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\WorkOrderController;
 use App\Http\Controllers\Admin\ServiceTemplateController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\PartController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\Settings\CategoryController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
@@ -132,7 +133,9 @@ Route::middleware(['auth'])->group(function () {
         });
 
        
-   
+        Route::resource('customers', CustomerController::class);
+        Route::patch('customers/{customer}/set-default', [CustomerController::class, 'setDefault'])
+            ->name('customers.set-default');
    
     });
     
