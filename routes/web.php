@@ -75,6 +75,14 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/work-orders/{workOrder}/status', [WorkOrderController::class, 'updateStatus'])
             ->name('work-orders.update-status');
         Route::patch('/admin/work-orders/{workOrder}/toggle-invoice', [WorkOrderController::class, 'toggleInvoice'])->name('work-orders.toggle-invoice');
+        
+        // Time Tracking Management
+        Route::get('/work-orders/{workOrder}/times/edit', [WorkOrderController::class, 'editTimes'])
+            ->name('work-orders.times.edit');
+        Route::patch('/work-orders/{workOrder}/times/{workOrderTime}', [WorkOrderController::class, 'updateTime'])
+            ->name('work-orders.times.update');
+        Route::delete('/work-orders/{workOrder}/times/{workOrderTime}', [WorkOrderController::class, 'destroyTime'])
+            ->name('work-orders.times.destroy');
 
         // Service Templates
         Route::resource('service-templates', ServiceTemplateController::class);

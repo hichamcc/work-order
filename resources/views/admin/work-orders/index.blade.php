@@ -146,30 +146,41 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="text-gray-900">
-                                            @php
-                                                $totalMinutes = $workOrder->times->sum(function($time) {
-                                                    $end = $time->ended_at ?? now();
-                                                    return $time->started_at->diffInMinutes($end);
-                                                });
-                                                $hours = floor($totalMinutes / 60);
-                                                $minutes = $totalMinutes % 60;
-                                                
-                                                // Get earliest started_at and latest ended_at
-                                                $firstTime = $workOrder->times->sortBy('started_at')->first();
-                                                $lastTime = $workOrder->times->sortByDesc('ended_at')->first();
-                                                
-                                                $startDateTime = $firstTime ? $firstTime->started_at->inApplicationTimezone()->format('M d, Y g:i A') : 'N/A';
-                                                $endDateTime = ($lastTime && $lastTime->ended_at) 
-                                                    ? $lastTime->ended_at->inApplicationTimezone()->format('M d, Y g:i A') 
-                                                    : 'Ongoing';
-                                            @endphp
-                                            <div class="font-medium">{{ $hours }}h {{ $minutes }}m</div>
-                                            <div class="text-xs text-gray-500 mt-1">
-                                                <div><span class="text-gray-700 font-medium">From:</span> {{ $startDateTime }}</div>
-                                                <div><span class="text-gray-700 font-medium">To:</span> {{ $endDateTime }}</div>
-                                            </div>
-                                        </span>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-gray-900">
+                                                @php
+                                                    $totalMinutes = $workOrder->times->sum(function($time) {
+                                                        $end = $time->ended_at ?? now();
+                                                        return $time->started_at->diffInMinutes($end);
+                                                    });
+                                                    $hours = floor($totalMinutes / 60);
+                                                    $minutes = $totalMinutes % 60;
+                                                    
+                                                    // Get earliest started_at and latest ended_at
+                                                    $firstTime = $workOrder->times->sortBy('started_at')->first();
+                                                    $lastTime = $workOrder->times->sortByDesc('ended_at')->first();
+                                                    
+                                                    $startDateTime = $firstTime ? $firstTime->started_at->inApplicationTimezone()->format('M d, Y g:i A') : 'N/A';
+                                                    $endDateTime = ($lastTime && $lastTime->ended_at) 
+                                                        ? $lastTime->ended_at->inApplicationTimezone()->format('M d, Y g:i A') 
+                                                        : 'Ongoing';
+                                                @endphp
+                                                <div class="font-medium">{{ $hours }}h {{ $minutes }}m</div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    <div><span class="text-gray-700 font-medium">From:</span> {{ $startDateTime }}</div>
+                                                    <div><span class="text-gray-700 font-medium">To:</span> {{ $endDateTime }}</div>
+                                                </div>
+                                            </span>
+                                            @if($workOrder->times->count() > 0)
+                                                <a href="{{ route('admin.work-orders.times.edit', $workOrder) }}" 
+                                                   class="text-gray-500 hover:text-indigo-600 transition-colors duration-200" 
+                                                   title="Edit time tracking">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </a>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <form action="{{ route('admin.work-orders.toggle-invoice', $workOrder) }}" method="POST" class="inline-block">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderTime;
 use App\Models\User;
 use App\Models\Customer;
 
@@ -234,4 +235,31 @@ public function update(Request $request, WorkOrder $workOrder)
     
     return back()->with('success', 'Invoice status updated successfully.');
 }
+
+    public function editTimes(WorkOrder $workOrder)
+    {
+        $workOrder->load(['times.user', 'assignedTo']);
+        
+        return view('admin.work-orders.edit-times', compact('workOrder'));
+    }
+
+    public function updateTime(Request $request, WorkOrder $workOrder, WorkOrderTime $workOrderTime)
+    {
+        $validated = $request->validate([
+            'started_at' => 'required|date',
+            'ended_at' => 'nullable|date|after:started_at',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $workOrderTime->update($validated);
+
+        return back()->with('success', 'Time entry updated successfully.');
+    }
+
+    public function destroyTime(WorkOrder $workOrder, WorkOrderTime $workOrderTime)
+    {
+        $workOrderTime->delete();
+
+        return back()->with('success', 'Time entry deleted successfully.');
+    }
 }
