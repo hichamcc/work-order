@@ -151,6 +151,56 @@
                 <div class="bg-white overflow-hidden shadow-sm rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Parts Used</h3>
+                        
+                        @if($workOrder->status === 'completed')
+                            <!-- Add Part Form for Completed Work Orders -->
+                            <form action="{{ route('admin.work-orders.add-part', $workOrder) }}" method="POST" class="mb-6" id="addPartForm">
+                                @csrf
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div class="col-span-2">
+                                        <select name="part_id" id="part_id" required class="w-full rounded-md border-gray-300" onchange="checkSerialTracking()">
+                                            <option value="">Select Part</option>
+                                            @foreach(\App\Models\Part::where('is_active', true)->get() as $part)
+                                                <option value="{{ $part->id }}" 
+                                                        data-serialized="{{ $part->track_serials ? 'true' : 'false' }}"
+                                                        data-stock="{{ $part->stock }}">
+                                                    {{ $part->name }} ({{ $part->stock }} in stock)
+                                                    @if($part->track_serials) [Serial Tracked] @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <input type="number" 
+                                            id="quantity"
+                                            name="quantity" 
+                                            min="1" 
+                                            value="1" 
+                                            required 
+                                            class="w-full rounded-md border-gray-300"
+                                            placeholder="Quantity"
+                                            onchange="updateSerialSelection()">
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                            Add Part
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Serial Number Selection Section (hidden by default) -->
+                                <div id="serialSelectionSection" class="mt-4 p-4 border border-gray-200 rounded-md hidden">
+                                    <h4 class="font-medium mb-2">Select Serial Numbers</h4>
+                                    <p class="text-sm text-gray-600 mb-3">Please select <span id="requiredCount">1</span> serial number(s):</p>
+                                    
+                                    <div id="serialNumbersList" class="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                                        <!-- Serial numbers will be loaded here via AJAX -->
+                                        <div class="text-gray-500 italic">Loading available serial numbers...</div>
+                                    </div>
+                                </div>
+                            </form>
+                        @endif
+
                         @if($workOrder->parts->count() > 0)
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
@@ -373,4 +423,138 @@
             </div>
         </div>
     </div>
+
+    @if($workOrder->status === 'completed')
+        <!-- JavaScript for Part Adding (only for completed work orders) -->
+        <script>
+            // Track if the part is serialized
+            let isSerialTracked = false;
+            let availableStock = 0;
+            
+            function checkSerialTracking() {
+                const partSelect = document.getElementById('part_id');
+                const selectedOption = partSelect.options[partSelect.selectedIndex];
+                const serialSection = document.getElementById('serialSelectionSection');
+                
+                isSerialTracked = selectedOption.getAttribute('data-serialized') === 'true';
+                availableStock = parseInt(selectedOption.getAttribute('data-stock') || 0);
+                
+                // Show/hide serial number selection section
+                if (isSerialTracked && partSelect.value !== '') {
+                    serialSection.classList.remove('hidden');
+                    loadSerialNumbers(partSelect.value);
+                    updateSerialSelection();
+                } else {
+                    serialSection.classList.add('hidden');
+                }
+                
+                // Update quantity max value for non-serialized parts
+                const quantityInput = document.getElementById('quantity');
+                if (!isSerialTracked) {
+                    quantityInput.max = availableStock;
+                } else {
+                    quantityInput.removeAttribute('max');
+                }
+            }
+            
+            function updateSerialSelection() {
+                const quantity = parseInt(document.getElementById('quantity').value);
+                document.getElementById('requiredCount').textContent = quantity;
+                
+                // If serialized, reload serial numbers when quantity changes
+                if (isSerialTracked) {
+                    const partId = document.getElementById('part_id').value;
+                    if (partId) {
+                        loadSerialNumbers(partId);
+                    }
+                }
+            }
+            
+            function loadSerialNumbers(partId) {
+                const serialsList = document.getElementById('serialNumbersList');
+                const quantity = parseInt(document.getElementById('quantity').value);
+                
+                // Show loading message
+                serialsList.innerHTML = '<div class="text-gray-500 italic col-span-3">Loading available serial numbers...</div>';
+                
+                // Fetch available serial numbers
+                fetch(`/api/parts/${partId}/serials`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length === 0) {
+                            serialsList.innerHTML = '<div class="text-red-500 italic col-span-3">No serial numbers available for this part</div>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        data.forEach(serial => {
+                            html += `
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" 
+                                    name="serial_numbers[]" 
+                                    value="${serial.id}" 
+                                    id="serial_${serial.id}" 
+                                    class="serial-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <label for="serial_${serial.id}" class="text-sm">${serial.serial_number}</label>
+                            </div>`;
+                        });
+                        
+                        serialsList.innerHTML = html;
+                        
+                        // Set up event listeners for checkboxes
+                        const checkboxes = document.querySelectorAll('.serial-checkbox');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', function() {
+                                enforceSelectionLimit(quantity);
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading serial numbers:', error);
+                        serialsList.innerHTML = '<div class="text-red-500 italic col-span-3">Error loading serial numbers</div>';
+                    });
+            }
+            
+            function enforceSelectionLimit(limit) {
+                const checkboxes = document.querySelectorAll('.serial-checkbox:checked');
+                
+                if (checkboxes.length > limit) {
+                    // If more than the limit are checked, uncheck the last one
+                    checkboxes[checkboxes.length - 1].checked = false;
+                }
+                
+                // Update the count display
+                const selected = document.querySelectorAll('.serial-checkbox:checked').length;
+                document.getElementById('requiredCount').textContent = `${limit} (${selected} selected)`;
+            }
+            
+            // Form validation before submit
+            document.getElementById('addPartForm').addEventListener('submit', function(e) {
+                const partSelect = document.getElementById('part_id');
+                
+                if (partSelect.value === '') {
+                    alert('Please select a part');
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Validate serial selection if needed
+                if (isSerialTracked) {
+                    const quantity = parseInt(document.getElementById('quantity').value);
+                    const selectedSerials = document.querySelectorAll('.serial-checkbox:checked').length;
+                    
+                    if (selectedSerials !== quantity) {
+                        alert(`Please select exactly ${quantity} serial numbers`);
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            });
+            
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                checkSerialTracking();
+            });
+        </script>
+    @endif
 </x-app-layout>

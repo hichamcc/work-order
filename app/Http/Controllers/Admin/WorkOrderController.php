@@ -7,8 +7,11 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderTime;
 use App\Models\User;
 use App\Models\Customer;
-
 use App\Models\ServiceTemplate;
+use App\Models\Part;
+use App\Models\PartInstance;
+use App\Models\WorkOrderPart;
+use App\Models\StockAdjustment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Admin\StoreWorkOrderRequest;
@@ -261,5 +264,111 @@ public function update(Request $request, WorkOrder $workOrder)
         $workOrderTime->delete();
 
         return back()->with('success', 'Time entry deleted successfully.');
+    }
+
+    public function addPart(Request $request, WorkOrder $workOrder)
+    {
+        // Only allow adding parts to completed work orders
+        if ($workOrder->status !== 'completed') {
+            return back()->with('error', 'Parts can only be added to completed work orders.');
+        }
+
+        $validated = $request->validate([
+            'part_id' => 'required|exists:parts,id',
+            'quantity' => 'required|integer|min:1',
+            'serial_numbers' => 'nullable|array',
+            'serial_numbers.*' => 'exists:part_instances,id',
+        ]);
+    
+        try {
+            DB::beginTransaction();
+    
+            $part = Part::findOrFail($validated['part_id']);
+    
+            // Handle serialized parts
+            if ($part->track_serials) {
+                // Validate that serial numbers were provided
+                if (empty($validated['serial_numbers']) || count($validated['serial_numbers']) != $validated['quantity']) {
+                    return back()->with('error', 'Please select ' . $validated['quantity'] . ' serial numbers.');
+                }
+    
+                // Check if all the serial numbers are available
+                $partInstances = PartInstance::whereIn('id', $validated['serial_numbers'])
+                    ->where('part_id', $part->id)
+                    ->where('status', 'in_stock')
+                    ->get();
+    
+                if ($partInstances->count() != count($validated['serial_numbers'])) {
+                    return back()->with('error', 'Some selected serial numbers are not available.');
+                }
+    
+                // Create work order part record
+                $workOrderPart = $workOrder->parts()->create([
+                    'part_id' => $validated['part_id'],
+                    'quantity' => $validated['quantity'],
+                    'cost_at_time' => $part->cost,
+                ]);
+    
+                // Update part instances status and link to work order
+                foreach ($partInstances as $instance) {
+                    $instance->update([
+                        'status' => 'assigned',
+                        'work_order_id' => $workOrder->id
+                    ]);
+    
+                    // Create stock adjustment for each serial
+                    $part->stockAdjustments()->create([
+                        'adjusted_by' => auth()->id(),
+                        'previous_stock' => $part->stock,
+                        'new_stock' => $part->stock - 1,
+                        'adjustment_quantity' => -1,
+                        'adjustment_type' => 'remove',
+                        'notes' => "Serial #{$instance->serial_number} added to Work Order #{$workOrder->id} by admin",
+                        'part_instance_id' => $instance->id
+                    ]);
+    
+                    // Update part stock
+                    $part->decrement('stock');
+                }
+            } else {
+                // Handle regular non-serialized parts
+                // Check if enough stock is available
+                if ($part->stock < $validated['quantity']) {
+                    return back()->with('error', 'Not enough stock available. Current stock: ' . $part->stock);
+                }
+    
+                // Create work order part record
+                $workOrder->parts()->create([
+                    'part_id' => $validated['part_id'],
+                    'quantity' => $validated['quantity'],
+                    'cost_at_time' => $part->cost,
+                ]);
+    
+                // Generate automatic note
+                $note = "Added to Work Order #{$workOrder->id} - {$workOrder->title} by admin";
+    
+                // Create stock adjustment record
+                $part->stockAdjustments()->create([
+                    'adjusted_by' => auth()->id(),
+                    'previous_stock' => $part->stock,
+                    'new_stock' => $part->stock - $validated['quantity'],
+                    'adjustment_quantity' => -$validated['quantity'],
+                    'adjustment_type' => 'remove',
+                    'notes' => $note,
+                ]);
+    
+                // Update part stock
+                $part->update([
+                    'stock' => $part->stock - $validated['quantity']
+                ]);
+            }
+    
+            DB::commit();
+            return back()->with('success', 'Part added successfully.');
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error adding part: ' . $e->getMessage());
+        }
     }
 }

@@ -18,7 +18,7 @@
         <div class="max-w-10xl mx-auto sm:px-6 lg:px-8">
             <!-- Search and Filters -->
             <div class="mb-6 bg-white rounded-lg shadow-sm p-6">
-                <form action="{{ route('admin.work-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <form action="{{ route('admin.work-orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-7 gap-4">
                     <div>
                         <x-input-label for="search" :value="__('Search')" />
                         <x-text-input id="search" name="search" type="text" class="mt-1 block w-full" 
@@ -61,6 +61,18 @@
                             <option value="on_hold" {{ request('status') === 'on_hold' ? 'selected' : '' }}>On Hold</option>
                             <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
                         </select>
+                    </div>
+
+                    <div>
+                        <x-input-label for="date_from" :value="__('Date From')" />
+                        <x-text-input id="date_from" name="date_from" type="date" class="mt-1 block w-full" 
+                            :value="request('date_from')" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="date_to" :value="__('Date To')" />
+                        <x-text-input id="date_to" name="date_to" type="date" class="mt-1 block w-full" 
+                            :value="request('date_to')" />
                     </div>
             
                     <div class="flex items-end space-x-2">

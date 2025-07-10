@@ -75,6 +75,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/work-orders/{workOrder}/status', [WorkOrderController::class, 'updateStatus'])
             ->name('work-orders.update-status');
         Route::patch('/admin/work-orders/{workOrder}/toggle-invoice', [WorkOrderController::class, 'toggleInvoice'])->name('work-orders.toggle-invoice');
+        Route::post('/work-orders/{workOrder}/add-part', [WorkOrderController::class, 'addPart'])
+            ->name('work-orders.add-part');
         
         // Time Tracking Management
         Route::get('/work-orders/{workOrder}/times/edit', [WorkOrderController::class, 'editTimes'])
