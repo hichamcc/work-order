@@ -243,49 +243,84 @@
         let currentWorkOrderId = null;
         
         function markAsCompleted(workOrderId) {
+            console.log('markAsCompleted called with:', workOrderId);
             currentWorkOrderId = workOrderId;
-            document.getElementById('completionConfirmModal').classList.remove('hidden');
+            const modal = document.getElementById('completionConfirmModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                console.log('Modal should be visible now');
+            } else {
+                console.error('Modal element not found');
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize immediately without waiting for DOMContentLoaded
+        (function initializeModal() {
             const confirmModal = document.getElementById('completionConfirmModal');
             const confirmBtn = document.getElementById('confirmComplete');
             const cancelBtn = document.getElementById('cancelComplete');
             const completeForm = document.getElementById('completeWorkForm');
 
-            // Handle confirm completion
-            confirmBtn.addEventListener('click', function() {
+            // If elements don't exist yet, wait for DOM to load
+            if (!confirmModal || !confirmBtn || !cancelBtn || !completeForm) {
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeModal);
+                } else {
+                    // DOM is already loaded, but elements still don't exist
+                    console.error('Modal elements not found in DOM');
+                }
+                return;
+            }
+
+            console.log('Initializing modal event listeners');
+
+            // Remove existing event listeners to prevent duplicates
+            confirmBtn.removeEventListener('click', handleConfirmClick);
+            cancelBtn.removeEventListener('click', handleCancelClick);
+            confirmModal.removeEventListener('click', handleModalClick);
+            
+            // Add event listeners
+            confirmBtn.addEventListener('click', handleConfirmClick);
+            cancelBtn.addEventListener('click', handleCancelClick);
+            confirmModal.addEventListener('click', handleModalClick);
+
+            function handleConfirmClick() {
+                console.log('Confirm button clicked, currentWorkOrderId:', currentWorkOrderId);
                 if (currentWorkOrderId) {
                     // Update form action with the work order ID
                     completeForm.action = `/worker/${currentWorkOrderId}/update-status`;
+                    console.log('Form action set to:', completeForm.action);
                     
                     // Submit the form
                     completeForm.submit();
+                } else {
+                    console.error('No work order ID set');
                 }
-            });
+            }
 
-            // Handle cancel
-            cancelBtn.addEventListener('click', function() {
+            function handleCancelClick() {
+                console.log('Cancel button clicked');
                 confirmModal.classList.add('hidden');
                 currentWorkOrderId = null;
-            });
+            }
 
-            // Close modal when clicking outside
-            confirmModal.addEventListener('click', function(e) {
+            function handleModalClick(e) {
                 if (e.target === confirmModal) {
+                    console.log('Modal backdrop clicked');
                     confirmModal.classList.add('hidden');
                     currentWorkOrderId = null;
                 }
-            });
+            }
 
             // Close modal with Escape key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && !confirmModal.classList.contains('hidden')) {
+                    console.log('Escape key pressed');
                     confirmModal.classList.add('hidden');
                     currentWorkOrderId = null;
                 }
             });
-        });
+        })();
     </script>
 @endpush
 
