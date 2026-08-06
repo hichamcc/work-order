@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'mapon' => [
+        'key' => env('MAPON_API_KEY'),
+        'base_url' => env('MAPON_BASE_URL', 'https://mapon.com/api/v1'),
+        // Minutes the unit list stays cached before it is pulled from Mapon again.
+        'cache_minutes' => (int) env('MAPON_CACHE_MINUTES', 10),
+        // Kilometres a truck may drive after an oil service before it is flagged.
+        'oil_service_interval_km' => (int) env('OIL_SERVICE_INTERVAL_KM', 120000),
+    ],
+
 ];

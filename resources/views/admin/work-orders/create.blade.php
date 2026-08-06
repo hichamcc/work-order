@@ -103,6 +103,89 @@
                             </div>
                         </div>
 
+                        <!-- Job Type -->
+                        <div class="border-t pt-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Job Type') }}</h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                @foreach(['truck' => 'Truck', 'trailer' => 'Trailer', 'other' => 'Other'] as $value => $label)
+                                    <label class="border rounded-lg p-4 cursor-pointer hover:border-indigo-500 flex items-center space-x-3"
+                                           :class="{ 'border-indigo-500 ring-2 ring-indigo-500': assetType === '{{ $value }}' }">
+                                        <input type="radio" name="asset_type" value="{{ $value }}"
+                                               x-model="assetType"
+                                               class="text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                        <span class="font-medium text-gray-900">{{ __($label) }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <x-input-error :messages="$errors->get('asset_type')" class="mt-2" />
+
+                            <!-- Truck details -->
+                            <div x-show="assetType === 'truck'" x-cloak class="mt-6 space-y-4 bg-gray-50 p-4 rounded-lg">
+                                @if(empty($trucks))
+                                    <div class="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded p-3">
+                                        {{ __('No trucks available from Mapon. Check the MAPON_API_KEY setting.') }}
+                                    </div>
+                                @endif
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <x-input-label for="truck_number" :value="__('Truck NR')" />
+                                        <select id="truck_number" name="truck_number" x-model="truckNumber"
+                                                @change="fetchKm(false)"
+                                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                            <option value="">{{ __('Select truck') }}</option>
+                                            @foreach($trucks as $truck)
+                                                <option value="{{ $truck['number'] }}">
+                                                    {{ $truck['label'] }}@if($truck['label'] !== $truck['number']) ({{ $truck['number'] }})@endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <x-input-error :messages="$errors->get('truck_number')" class="mt-2" />
+                                    </div>
+
+                                    <div>
+                                        <div class="flex justify-between items-center">
+                                            <x-input-label for="truck_km" :value="__('KM')" />
+                                            <button type="button" @click="fetchKm(true)"
+                                                    x-show="truckNumber"
+                                                    class="text-xs text-indigo-600 hover:text-indigo-800"
+                                                    x-text="loadingKm ? '{{ __('Loading...') }}' : '{{ __('Refresh from Mapon') }}'"></button>
+                                        </div>
+                                        <x-text-input type="number" id="truck_km" name="truck_km" min="0" step="1"
+                                                      class="mt-1 block w-full" x-model="truckKm" />
+                                        <p class="mt-1 text-sm text-gray-500" x-show="kmSource" x-cloak>
+                                            {{ __('From Mapon') }} (<span x-text="kmSource === 'can' ? 'CAN' : 'GPS'"></span>).
+                                            {{ __('You can edit it if it is wrong.') }}
+                                        </p>
+                                        <p class="mt-1 text-sm text-yellow-700" x-show="truckNumber && !kmSource && !loadingKm" x-cloak>
+                                            {{ __('No mileage returned by Mapon. Please enter it manually.') }}
+                                        </p>
+                                        <x-input-error :messages="$errors->get('truck_km')" class="mt-2" />
+                                    </div>
+                                </div>
+
+                                <div class="border-t pt-4">
+                                    <span class="block font-medium text-sm text-gray-700">
+                                        {{ __('Do you make Oil service for this truck on this KM?') }}
+                                    </span>
+                                    <div class="mt-2 flex items-center space-x-6">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="oil_service" value="1" x-model="oilService"
+                                                   class="text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                            <span class="text-sm text-gray-900">{{ __('Yes') }}</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="radio" name="oil_service" value="0" x-model="oilService"
+                                                   class="text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                            <span class="text-sm text-gray-900">{{ __('No') }}</span>
+                                        </label>
+                                    </div>
+                                    <x-input-error :messages="$errors->get('oil_service')" class="mt-2" />
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Service Template Selection -->
                         <div class="border-t pt-6">
                             <h3 class="text-lg font-medium text-gray-900 mb-4">{{ __('Service Template') }}</h3>
@@ -188,6 +271,46 @@
                 selectedTemplate: null,
                 templates: @json($templates->load('checklistItems')),
 
+                assetType: '{{ old('asset_type') }}',
+                truckNumber: '{{ old('truck_number') }}',
+                truckKm: '{{ old('truck_km') }}',
+                oilService: '{{ old('oil_service', '0') }}',
+                kmSource: null,
+                loadingKm: false,
+                trucks: @json($trucks),
+
+                // Pull the odometer for the chosen truck. `fresh` bypasses the
+                // cached Mapon unit list for an up-to-the-minute reading.
+                fetchKm(fresh = false) {
+                    this.kmSource = null;
+
+                    if (!this.truckNumber) {
+                        this.truckKm = '';
+                        return;
+                    }
+
+                    this.loadingKm = true;
+
+                    const url = '{{ route('admin.work-orders.truck-km') }}'
+                        + '?truck_number=' + encodeURIComponent(this.truckNumber)
+                        + (fresh ? '&fresh=1' : '');
+
+                    fetch(url, { headers: { 'Accept': 'application/json' } })
+                        .then(response => response.ok ? response.json() : Promise.reject(response.status))
+                        .then(data => {
+                            if (data.km !== null) {
+                                this.truckKm = data.km;
+                                this.kmSource = data.km_source;
+                            }
+                        })
+                        .catch(() => {
+                            // Leave the field editable so the KM can still be typed in.
+                        })
+                        .finally(() => {
+                            this.loadingKm = false;
+                        });
+                },
+
                 selectTemplate(id) {
                     this.selectedTemplateId = id;
                     this.selectedTemplate = this.templates.find(t => t.id == id);
@@ -202,6 +325,16 @@
                     if (this.selectedTemplateId) {
                         this.selectTemplate(this.selectedTemplateId);
                     }
+
+                    // Clear truck details when the job is switched away from a truck.
+                    this.$watch('assetType', value => {
+                        if (value !== 'truck') {
+                            this.truckNumber = '';
+                            this.truckKm = '';
+                            this.kmSource = null;
+                            this.oilService = '0';
+                        }
+                    });
                 },
                 validateForm() {
             this.errors = {};

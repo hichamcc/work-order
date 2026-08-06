@@ -1,6 +1,3 @@
-
-
-
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
@@ -10,6 +7,7 @@ use App\Http\Controllers\Admin\ServiceTemplateController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\PartController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\TruckServiceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\Settings\CategoryController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
@@ -68,7 +66,16 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
             ->name('users.toggle-status');
     
+        // Trucks
+        Route::get('/trucks/service-due', [TruckServiceController::class, 'index'])
+            ->name('trucks.service-due');
+        Route::get('/trucks/oil-history', [TruckServiceController::class, 'history'])
+            ->name('trucks.oil-history');
+
         // Work Orders
+        // Registered before the resource so it is not matched as work-orders/{workOrder}.
+        Route::get('/work-orders/truck-km', [WorkOrderController::class, 'truckKm'])
+            ->name('work-orders.truck-km');
         Route::resource('work-orders', WorkOrderController::class);
         Route::post('/work-orders/{workOrder}/assign', [WorkOrderController::class, 'assign'])
             ->name('work-orders.assign');

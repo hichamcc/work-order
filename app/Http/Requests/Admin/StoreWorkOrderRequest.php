@@ -23,10 +23,14 @@ class StoreWorkOrderRequest extends FormRequest
             'helpers.*' => 'exists:users,id',
             'priority' => ['required', 'in:low,medium,high,urgent'],
             'due_date' => [
-                'nullable', 
-                'date', 
+                'nullable',
+                'date',
                 'after_or_equal:today'
             ],
+            'asset_type' => ['required', 'in:truck,trailer,other'],
+            'truck_number' => ['nullable', 'required_if:asset_type,truck', 'string', 'max:255'],
+            'truck_km' => ['nullable', 'required_if:asset_type,truck', 'integer', 'min:0', 'max:9999999'],
+            'oil_service' => ['nullable', 'boolean'],
         ];
     }
 
@@ -43,6 +47,11 @@ class StoreWorkOrderRequest extends FormRequest
             'priority.in' => 'The selected priority is invalid.',
             'due_date.after_or_equal' => 'The due date must be today or a future date.',
             'service_template_id.exists' => 'The selected service template is invalid.',
+            'asset_type.required' => 'Please select whether this job is for a truck, trailer or other.',
+            'asset_type.in' => 'The selected job type is invalid.',
+            'truck_number.required_if' => 'Please select the truck number.',
+            'truck_km.required_if' => 'Please provide the truck KM.',
+            'truck_km.integer' => 'The truck KM must be a whole number.',
         ];
     }
 
@@ -51,5 +60,19 @@ class StoreWorkOrderRequest extends FormRequest
         if ($this->has('due_date') && empty($this->input('due_date'))) {
             $this->request->remove('due_date');
         }
+
+        // Truck details only belong to truck jobs; drop anything left behind by
+        // switching the asset type in the form.
+        if ($this->input('asset_type') !== 'truck') {
+            $this->merge([
+                'truck_number' => null,
+                'truck_km' => null,
+                'oil_service' => false,
+            ]);
+        }
+
+        $this->merge([
+            'oil_service' => $this->boolean('oil_service'),
+        ]);
     }
 }

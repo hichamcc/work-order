@@ -20,6 +20,11 @@ class WorkOrder extends Model
         'hold_reason',
         'invoiced',
         'customer_id',
+        'asset_type',
+        'truck_number',
+        'truck_km',
+        'truck_km_source',
+        'oil_service',
 
 
     ];
@@ -29,6 +34,8 @@ class WorkOrder extends Model
         'completed_at' => 'datetime',
         'due_date' => 'datetime',
         'invoiced' => 'boolean',
+        'truck_km' => 'integer',
+        'oil_service' => 'boolean',
 
     ];
 
@@ -107,5 +114,15 @@ public function customer()
 public function scopeForCustomer($query, $customerId)
 {
     return $query->where('customer_id', $customerId);
+}
+
+public function oilServices()
+{
+    return $this->hasMany(TruckOilService::class);
+}
+
+public function isTruck(): bool
+{
+    return $this->asset_type === 'truck';
 }
 }

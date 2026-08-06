@@ -5,4 +5,9 @@
     html {
       color-scheme: light !important;
     }
+
+    /* Keep Alpine-conditional blocks hidden until Alpine initialises. */
+    [x-cloak] {
+      display: none !important;
+    }
   }

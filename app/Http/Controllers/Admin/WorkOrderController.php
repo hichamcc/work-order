@@ -12,6 +12,9 @@ use App\Models\Part;
 use App\Models\PartInstance;
 use App\Models\WorkOrderPart;
 use App\Models\StockAdjustment;
+use App\Models\TruckOilService;
+use App\Models\TruckServiceAlert;
+use App\Services\MaponService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Admin\StoreWorkOrderRequest;
@@ -67,37 +70,83 @@ class WorkOrderController extends Controller
         ->orderBy('name')
         ->get();
 
-        return view('admin.work-orders.index', compact('workOrders', 'workers' , 'customers'));
+        // Badge on the oil service link.
+        $serviceDueCount = TruckServiceAlert::open()->count();
+
+        return view('admin.work-orders.index', compact('workOrders', 'workers' , 'customers', 'serviceDueCount'));
     }
 
-    public function create()
+    public function create(MaponService $mapon)
     {
         $workers = User::whereHas('role', function($q) {
             $q->where('slug', 'worker');
         })->get();
         $templates = ServiceTemplate::where('is_active', true)->get();
+        $trucks = $mapon->unitsForSelect();
 
-        return view('admin.work-orders.create', compact('workers', 'templates'));
+        return view('admin.work-orders.create', compact('workers', 'templates', 'trucks'));
     }
 
-    public function store(StoreWorkOrderRequest $request)
+    /**
+     * Live odometer lookup used by the create form when a truck is picked.
+     */
+    public function truckKm(Request $request, MaponService $mapon)
+    {
+        $validated = $request->validate([
+            'truck_number' => ['required', 'string', 'max:255'],
+        ]);
+
+        $reading = $mapon->readingForPlate($validated['truck_number'], $request->boolean('fresh'));
+
+        return response()->json([
+            'km' => $reading['km'],
+            'km_source' => $reading['source'],
+        ]);
+    }
+
+    public function store(StoreWorkOrderRequest $request, MaponService $mapon)
     {
         try {
             DB::beginTransaction();
-    
+
             // Get validated data
             $validated = $request->validated();
-            
+
             // Extract helpers from the validated data if they exist
             $helpers = $validated['helpers'] ?? [];
             unset($validated['helpers']); // Remove helpers from validated data before creating WorkOrder
-    
+
+            // Record where the KM came from: an untouched Mapon reading, or a
+            // figure the admin typed over it.
+            if (($validated['asset_type'] ?? null) === 'truck') {
+                $reading = $mapon->readingForPlate($validated['truck_number']);
+
+                $validated['truck_km_source'] = ($reading['km'] !== null && (int) $validated['truck_km'] === $reading['km'])
+                    ? $reading['source']
+                    : 'manual';
+            }
+
             $workOrder = WorkOrder::create([
                 ...$validated,
                 'created_by' => auth()->id(),
                 'status' => 'new',
             ]);
-    
+
+            // Log the oil service so the truck's history and the nightly check
+            // both have a baseline to measure from.
+            if ($workOrder->isTruck() && $workOrder->oil_service) {
+                TruckOilService::create([
+                    'truck_number' => $workOrder->truck_number,
+                    'km' => $workOrder->truck_km,
+                    'km_source' => $workOrder->truck_km_source,
+                    'work_order_id' => $workOrder->id,
+                    'recorded_by' => auth()->id(),
+                    'serviced_at' => now(),
+                ]);
+
+                TruckServiceAlert::resolveFor($workOrder->truck_number);
+            }
+
             // If a service template is selected, copy its checklist items
             if ($request->filled('service_template_id')) {
                 $template = ServiceTemplate::with('checklistItems')->find($request->service_template_id);
