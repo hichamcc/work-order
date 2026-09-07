@@ -15,6 +15,7 @@ use App\Models\StockAdjustment;
 use App\Models\TruckOilService;
 use App\Models\TruckServiceAlert;
 use App\Services\MaponService;
+use App\Services\OilServiceRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Admin\StoreWorkOrderRequest;
@@ -70,8 +71,9 @@ class WorkOrderController extends Controller
         ->orderBy('name')
         ->get();
 
-        // Badge on the oil service link.
-        $serviceDueCount = TruckServiceAlert::open()->count();
+        // Badge on the oil service link: only trucks already past their point,
+        // so it reflects work that is actually outstanding.
+        $serviceDueCount = TruckServiceAlert::open()->overdue()->count();
 
         return view('admin.work-orders.index', compact('workOrders', 'workers' , 'customers', 'serviceDueCount'));
     }
@@ -132,19 +134,15 @@ class WorkOrderController extends Controller
                 'status' => 'new',
             ]);
 
-            // Log the oil service so the truck's history and the nightly check
-            // both have a baseline to measure from.
+            // The oil service itself is recorded when the job is completed, not
+            // when it is booked, so the KM reflects the work actually being done.
+            // Booking it here still links the truck's open alert to this job, so
+            // the oil service list shows it as already dealt with.
             if ($workOrder->isTruck() && $workOrder->oil_service) {
-                TruckOilService::create([
-                    'truck_number' => $workOrder->truck_number,
-                    'km' => $workOrder->truck_km,
-                    'km_source' => $workOrder->truck_km_source,
-                    'work_order_id' => $workOrder->id,
-                    'recorded_by' => auth()->id(),
-                    'serviced_at' => now(),
-                ]);
-
-                TruckServiceAlert::resolveFor($workOrder->truck_number);
+                TruckServiceAlert::open()
+                    ->where('truck_number', $workOrder->truck_number)
+                    ->whereNull('work_order_id')
+                    ->update(['work_order_id' => $workOrder->id]);
             }
 
             // If a service template is selected, copy its checklist items
@@ -196,6 +194,7 @@ class WorkOrderController extends Controller
             'parts.part',
             'times',
             'comments.user',
+            'oilServices',
         ]);
 
         return view('admin.work-orders.show', compact('workOrder'));
@@ -275,6 +274,26 @@ public function update(Request $request, WorkOrder $workOrder)
             'hold_reason' => $validated['status'] === 'on_hold' ? $validated['hold_reason'] : null,
             'completed_at' => $validated['status'] === 'completed' ? now() : null,
         ]);
+
+        // Completing an oil service job records it against the truck and sets
+        // the next one due, matching the oil service page.
+        if ($validated['status'] === 'completed') {
+            try {
+                $result = app(OilServiceRecorder::class)->recordForWorkOrder($workOrder, auth()->id());
+            } catch (\Exception $e) {
+                report($e);
+                $result = null;
+            }
+
+            if ($result) {
+                return back()->with('success', sprintf(
+                    'Work order completed. %s recorded at %s km, next oil service due at %s km.',
+                    $workOrder->truck_number,
+                    number_format($result['km']),
+                    number_format($result['due_at_km'])
+                ));
+            }
+        }
 
         return back()->with('success', 'Work order status updated successfully.');
     }

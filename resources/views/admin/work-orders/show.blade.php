@@ -36,6 +36,51 @@
                                 <p class="text-gray-600">{{ $workOrder->description }}</p>
                             </div>
 
+                            @if($workOrder->asset_type)
+                                <div class="mt-4 border rounded-lg p-4 {{ $workOrder->oil_service ? 'bg-amber-50 border-amber-200' : 'bg-gray-50' }}">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-lg font-medium text-gray-900">
+                                            {{ __(ucfirst($workOrder->asset_type)) }}
+                                        </h3>
+                                        @if($workOrder->oil_service)
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-amber-200 text-amber-900">
+                                                {{ __('Oil service') }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    @if($workOrder->isTruck())
+                                        <dl class="mt-3 grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <dt class="font-medium text-gray-500">{{ __('Truck NR') }}</dt>
+                                                <dd class="text-gray-900">{{ $workOrder->truck_number ?? '—' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-medium text-gray-500">{{ __('KM') }}</dt>
+                                                <dd class="text-gray-900">
+                                                    {{ $workOrder->truck_km !== null ? number_format($workOrder->truck_km) : '—' }}
+                                                    @if($workOrder->truck_km_source)
+                                                        <span class="text-xs text-gray-400">({{ strtoupper($workOrder->truck_km_source) }})</span>
+                                                    @endif
+                                                </dd>
+                                            </div>
+                                        </dl>
+
+                                        @if($workOrder->oil_service)
+                                            <p class="mt-3 text-sm text-amber-800">
+                                                @if($workOrder->oilServices->isNotEmpty())
+                                                    {{ __('Recorded at') }}
+                                                    <strong>{{ number_format($workOrder->oilServices->first()->km) }} km</strong>
+                                                    {{ __('on') }} {{ $workOrder->oilServices->first()->serviced_at->format('d.m.Y') }}.
+                                                @else
+                                                    {{ __('The oil service is recorded against this truck when the work order is completed.') }}
+                                                @endif
+                                            </p>
+                                        @endif
+                                    @endif
+                                </div>
+                            @endif
+
                             <!-- Timeline of Status Changes -->
                             <div class="mt-6">
                                 <div class="flow-root">

@@ -54,9 +54,14 @@ Route::middleware(['auth'])->group(function () {
         return redirect()->route('worker.dashboard');
     })->name('dashboard');
 
+    // Completing an oil service is open to admins and to the worker the linked
+    // job is assigned to; the controller enforces which of the two applies.
+    Route::post('/trucks/alerts/{alert}/complete', [TruckServiceController::class, 'complete'])
+        ->name('trucks.alerts.complete');
+
     // Profile routes (from Breeze)
-  
-    
+
+
     Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -71,6 +76,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('trucks.service-due');
         Route::get('/trucks/oil-history', [TruckServiceController::class, 'history'])
             ->name('trucks.oil-history');
+        Route::post('/trucks/alerts/{alert}/assign', [TruckServiceController::class, 'assign'])
+            ->name('trucks.alerts.assign');
+        Route::patch('/trucks/alerts/{alert}', [TruckServiceController::class, 'update'])
+            ->name('trucks.alerts.update');
 
         // Work Orders
         // Registered before the resource so it is not matched as work-orders/{workOrder}.

@@ -108,6 +108,7 @@ class WorkerWorkOrderController extends Controller
             'parts.part',
             'times',
             'comments.user',
+            'oilServices',
         ]);
 
         $activeTiming = $workOrder->times()
@@ -170,11 +171,23 @@ class WorkerWorkOrderController extends Controller
             abort(403, 'This work order is not assigned to you.');
         }
     
+        // An oil service job cannot be closed without saying whether the oil was
+        // actually changed, so nothing is recorded by assumption.
+        $needsOilAnswer = $request->input('status') === 'completed'
+            && $workOrder->isTruck()
+            && $workOrder->oil_service
+            && ! $workOrder->oilServices()->exists();
+
         $validated = $request->validate([
             'status' => 'required|in:in_progress,on_hold,completed',
             'hold_reason' => 'required_if:status,on_hold',
+            'oil_service_done' => [$needsOilAnswer ? 'required' : 'nullable', 'boolean'],
+            'oil_service_km' => ['nullable', 'integer', 'min:0', 'max:9999999'],
+        ], [
+            'oil_service_done.required' => 'Please confirm whether you changed the oil on this truck.',
         ]);
-    
+
+
         // Check if all required checklist items are completed when marking as completed
         if ($validated['status'] === 'completed') {
             $incompleteRequired = $workOrder->checklistItems()
@@ -215,8 +228,57 @@ class WorkerWorkOrderController extends Controller
             'hold_reason' => $validated['status'] === 'on_hold' ? $validated['hold_reason'] : null,
             'completed_at' => $validated['status'] === 'completed' ? now() : null,
         ]);
-    
-        return back()->with('success', 'Work order status updated successfully.');
+
+        // Finishing an oil service job records it against the truck and sets the
+        // next one due, but only when the worker confirmed they did the work.
+        if ($validated['status'] === 'completed' && $needsOilAnswer) {
+            if ($request->boolean('oil_service_done')) {
+                $message = $this->recordOilService($workOrder, $validated['oil_service_km'] ?? null);
+            } else {
+                // Said no: the job is closed but the oil was not changed, so the
+                // truck stays flagged and the job stops claiming to be a service.
+                $workOrder->update(['oil_service' => false]);
+
+                $message = 'Work order completed. No oil service recorded, so '
+                    .$workOrder->truck_number.' stays on the oil service list.';
+            }
+        }
+
+        return back()->with('success', $message ?? 'Work order status updated successfully.');
+    }
+
+    /**
+     * Log the oil service for a completed truck job, if it was one.
+     */
+    private function recordOilService(WorkOrder $workOrder, ?int $km = null): ?string
+    {
+        $recorder = app(\App\Services\OilServiceRecorder::class);
+
+        try {
+            $result = $recorder->record(
+                $workOrder->truck_number,
+                $km ?? $workOrder->truck_km,
+                $workOrder,
+                auth()->id()
+            );
+        } catch (\Exception $e) {
+            // The job is already complete; the service can still be logged by
+            // hand from the oil service page.
+            report($e);
+
+            return null;
+        }
+
+        if ($result === null) {
+            return null;
+        }
+
+        return sprintf(
+            'Work order completed. %s recorded at %s km, next oil service due at %s km.',
+            $workOrder->truck_number,
+            number_format($result['km']),
+            number_format($result['due_at_km'])
+        );
     }
     
     /**

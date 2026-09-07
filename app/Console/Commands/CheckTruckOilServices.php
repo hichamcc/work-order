@@ -20,12 +20,18 @@ class CheckTruckOilServices extends Command
 
         $this->info("Checking trucks against a {$interval} km oil service interval...");
 
-        // Trucks with no recorded oil service have no baseline to measure from,
-        // so only the ones we have serviced before are checked.
+        // A truck's baseline comes either from an oil service recorded here or,
+        // until it has had one, from an imported reminder. A due point the admin
+        // has corrected by hand counts the same way.
         $lastServices = TruckOilService::latestPerTruck();
+        $imported = TruckServiceAlert::open()
+            ->whereIn('source', ['mapon_reminder', 'manual'])
+            ->whereNotNull('due_at_km')
+            ->get()
+            ->keyBy('truck_number');
 
-        if ($lastServices->isEmpty()) {
-            $this->info('No oil services recorded yet; nothing to check.');
+        if ($lastServices->isEmpty() && $imported->isEmpty()) {
+            $this->info('No oil services recorded and no reminders imported; nothing to check.');
 
             return 0;
         }
@@ -44,8 +50,14 @@ class CheckTruckOilServices extends Command
         DB::beginTransaction();
 
         try {
-            foreach ($lastServices as $truckNumber => $lastService) {
-                $unit = $units[$mapon->normalisePlate($truckNumber)] ?? null;
+            // A truck serviced through the system supersedes its imported
+            // reminder, so history is checked first and imports fill the rest.
+            $truckNumbers = $lastServices->keys()
+                ->merge($imported->keys())
+                ->unique();
+
+            foreach ($truckNumbers as $truckNumber) {
+                $unit = $mapon->resolvePlate($truckNumber)['unit'];
 
                 if (! $unit) {
                     $this->warn("  {$truckNumber}: not found in Mapon, skipped.");
@@ -61,42 +73,58 @@ class CheckTruckOilServices extends Command
                     continue;
                 }
 
-                $driven = $reading['km'] - $lastService->km;
+                $lastService = $lastServices[$truckNumber] ?? null;
 
-                if ($driven < $interval) {
-                    continue;
+                if ($lastService) {
+                    $driven = $reading['km'] - $lastService->km;
+
+                    if ($driven < $interval) {
+                        continue;
+                    }
+
+                    $attributes = [
+                        'current_km' => $reading['km'],
+                        'last_service_km' => $lastService->km,
+                        'due_at_km' => $lastService->km + $interval,
+                        'km_since_service' => $driven,
+                        'km_source' => $reading['source'],
+                        'source' => 'service_history',
+                        'flagged_at' => now(),
+                    ];
+
+                    $summary = "due ({$driven} km since service)";
+                } else {
+                    // Imported reminder, or a due point the admin has corrected.
+                    $alert = $imported[$truckNumber];
+                    $dueAtKm = (int) $alert->due_at_km;
+
+                    if ($reading['km'] < $dueAtKm) {
+                        continue;
+                    }
+
+                    $over = $reading['km'] - $dueAtKm;
+
+                    // The note belongs to whoever wrote it: the workshop's own
+                    // text from the import, or the admin's correction. The due
+                    // figures are columns on the list, so they are not repeated.
+                    $attributes = [
+                        'current_km' => $reading['km'],
+                        'due_at_km' => $dueAtKm,
+                        'km_source' => $reading['source'],
+                        'source' => $alert->source,
+                        'flagged_at' => now(),
+                    ];
+
+                    $summary = "due ({$over} km past the {$dueAtKm} km point)";
                 }
-
-                $existing = TruckServiceAlert::open()
-                    ->where('truck_number', $truckNumber)
-                    ->first();
-
-                $note = sprintf(
-                    'Driven %s km since the last oil service at %s km. Oil service is due.',
-                    number_format($driven),
-                    number_format($lastService->km)
-                );
-
-                $attributes = [
-                    'current_km' => $reading['km'],
-                    'last_service_km' => $lastService->km,
-                    'km_since_service' => $driven,
-                    'km_source' => $reading['source'],
-                    'note' => $note,
-                    'flagged_at' => now(),
-                ];
 
                 // Refresh the open alert rather than stacking a new row each night.
-                if ($existing) {
-                    $existing->update($attributes);
-                } else {
-                    TruckServiceAlert::create([
-                        'truck_number' => $truckNumber,
-                        ...$attributes,
-                    ]);
-                }
+                TruckServiceAlert::updateOrCreate(
+                    ['truck_number' => $truckNumber, 'resolved_at' => null],
+                    $attributes
+                );
 
-                $this->line("  {$truckNumber}: due ({$driven} km since service)");
+                $this->line("  {$truckNumber}: {$summary}");
                 $flagged++;
             }
 

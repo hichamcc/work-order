@@ -131,6 +131,41 @@ class MaponService
     }
 
     /**
+     * Resolve a plate that may be written as a composite identifier.
+     *
+     * Mapon holds some units under the full "ZK4695L/WT73/4154" form and others
+     * under just the tractor plate, so the whole string is tried first and the
+     * leading segment only as a fallback.
+     *
+     * @return array{unit: array|null, matched_on: string|null, key: string|null}
+     */
+    public function resolvePlate(string $plate, bool $fresh = false): array
+    {
+        $units = $this->units($fresh);
+        $full = $this->normalisePlate($plate);
+
+        if (isset($units[$full])) {
+            return ['unit' => $units[$full], 'matched_on' => 'exact', 'key' => $full];
+        }
+
+        foreach (['/', '-'] as $separator) {
+            if (! str_contains($full, $separator)) {
+                continue;
+            }
+
+            $first = explode($separator, $full)[0];
+
+            if ($first !== '' && isset($units[$first])) {
+                return ['unit' => $units[$first], 'matched_on' => 'segment', 'key' => $first];
+            }
+
+            break;
+        }
+
+        return ['unit' => null, 'matched_on' => null, 'key' => null];
+    }
+
+    /**
      * @return array<string, array>
      */
     protected function fetchUnits(): array

@@ -47,6 +47,46 @@
                                     <dt class="text-sm font-medium text-gray-500">Description</dt>
                                     <dd class="mt-1 text-sm text-gray-900">{{ $workOrder->description }}</dd>
                                 </div>
+
+                                @if($workOrder->asset_type)
+                                    <div class="rounded-lg p-4 {{ $workOrder->oil_service ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50 border border-gray-200' }}">
+                                        <div class="flex items-center justify-between">
+                                            <dt class="text-sm font-medium text-gray-500">
+                                                {{ __(ucfirst($workOrder->asset_type)) }}
+                                            </dt>
+                                            @if($workOrder->oil_service)
+                                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-amber-200 text-amber-900">
+                                                    {{ __('Oil service') }}
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        @if($workOrder->isTruck())
+                                            <dd class="mt-2 text-sm text-gray-900">
+                                                <span class="font-semibold text-base">{{ $workOrder->truck_number ?? '—' }}</span>
+                                                @if($workOrder->truck_km !== null)
+                                                    <span class="ml-2 text-gray-600">
+                                                        {{ number_format($workOrder->truck_km) }} km
+                                                        @if($workOrder->truck_km_source)
+                                                            <span class="text-xs text-gray-400">({{ strtoupper($workOrder->truck_km_source) }})</span>
+                                                        @endif
+                                                    </span>
+                                                @endif
+                                            </dd>
+
+                                            @if($workOrder->oil_service)
+                                                <dd class="mt-2 text-sm text-amber-800">
+                                                    @if($workOrder->oilServices->isNotEmpty())
+                                                        {{ __('Oil service recorded at') }}
+                                                        <strong>{{ number_format($workOrder->oilServices->first()->km) }} km</strong>.
+                                                    @else
+                                                        {{ __('Completing this job records the oil service for this truck.') }}
+                                                    @endif
+                                                </dd>
+                                            @endif
+                                        @endif
+                                    </div>
+                                @endif
                                 <div>
                                     <dt class="text-sm font-medium text-gray-500">Due Date</dt>
                                     <dd class="mt-1 text-sm text-gray-900">
@@ -624,12 +664,60 @@
                                         <div id="holdReasonContainer" class="@if($workOrder->status !== 'on_hold') hidden @endif">
                                             <label for="hold_reason" class="block text-sm font-medium text-gray-700">Hold Reason</label>
                                             <textarea id="hold_reason"
-                                                      name="hold_reason" 
-                                                      rows="3" 
+                                                      name="hold_reason"
+                                                      rows="3"
                                                       class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                                       placeholder="Please provide a reason for putting the work order on hold...">{{ $workOrder->hold_reason }}</textarea>
                                         </div>
-                        
+
+                                        @if($workOrder->isTruck() && $workOrder->oil_service && $workOrder->oilServices->isEmpty())
+                                            {{-- Shown only when completing: the worker must say whether the oil
+                                                 was actually changed before the job can be closed. --}}
+                                            <div id="oilServiceContainer" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                                <p class="text-sm font-medium text-gray-900">
+                                                    {{ __('Did you change the oil on') }} {{ $workOrder->truck_number }}?
+                                                </p>
+
+                                                <div class="mt-3 space-y-2">
+                                                    <label class="flex items-start gap-2 cursor-pointer">
+                                                        <input type="radio" name="oil_service_done" value="1"
+                                                               class="mt-1 oil-service-answer text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                                        <span class="text-sm text-gray-900">
+                                                            {{ __('Yes, oil changed') }}
+                                                            <span class="block text-xs text-gray-500">
+                                                                {{ __('Records the service and sets the next one due') }}
+                                                                {{ number_format(config('services.mapon.oil_service_interval_km', 120000)) }}
+                                                                {{ __('km later.') }}
+                                                            </span>
+                                                        </span>
+                                                    </label>
+
+                                                    <label class="flex items-start gap-2 cursor-pointer">
+                                                        <input type="radio" name="oil_service_done" value="0"
+                                                               class="mt-1 oil-service-answer text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                                        <span class="text-sm text-gray-900">
+                                                            {{ __('No, not done') }}
+                                                            <span class="block text-xs text-gray-500">
+                                                                {{ __('The truck stays on the oil service list.') }}
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                </div>
+
+                                                <div id="oilKmContainer" class="mt-3 hidden">
+                                                    <label for="oil_service_km" class="block text-sm font-medium text-gray-700">
+                                                        {{ __('KM at service') }}
+                                                    </label>
+                                                    <input type="number" id="oil_service_km" name="oil_service_km" min="0" step="1"
+                                                           value="{{ $workOrder->truck_km }}"
+                                                           class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                    <p class="mt-1 text-xs text-gray-500">
+                                                        {{ __('Correct this if the dashboard reads differently.') }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        @endif
+
                                         <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
                                             Update Status
                                         </button>
@@ -649,6 +737,26 @@
             const holdReasonContainer = document.getElementById('holdReasonContainer');
             const holdReasonTextarea = document.querySelector('textarea[name="hold_reason"]');
 
+            // Only asked when completing an oil service job.
+            const oilServiceContainer = document.getElementById('oilServiceContainer');
+            const oilKmContainer = document.getElementById('oilKmContainer');
+            const oilAnswers = document.querySelectorAll('.oil-service-answer');
+
+            function toggleOilService(status) {
+                if (!oilServiceContainer) {
+                    return;
+                }
+
+                const completing = status === 'completed';
+                oilServiceContainer.classList.toggle('hidden', !completing);
+                oilAnswers.forEach(input => input.required = completing);
+
+                if (!completing) {
+                    oilAnswers.forEach(input => input.checked = false);
+                    oilKmContainer.classList.add('hidden');
+                }
+            }
+
             if (statusSelect) {
                 statusSelect.addEventListener('change', function() {
                     if (this.value === 'on_hold') {
@@ -659,8 +767,19 @@
                         holdReasonTextarea.required = false;
                         holdReasonTextarea.value = '';
                     }
+
+                    toggleOilService(this.value);
                 });
+
+                toggleOilService(statusSelect.value);
             }
+
+            // The KM only matters when the oil was actually changed.
+            oilAnswers.forEach(input => {
+                input.addEventListener('change', function() {
+                    oilKmContainer.classList.toggle('hidden', this.value !== '1');
+                });
+            });
 
             // Auto-submit checklist items on checkbox change
             document.querySelectorAll('input[name="is_completed"]').forEach(checkbox => {
