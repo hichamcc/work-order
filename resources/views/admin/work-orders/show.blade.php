@@ -67,15 +67,19 @@
                                         </dl>
 
                                         @if($workOrder->oil_service)
-                                            <p class="mt-3 text-sm text-amber-800">
-                                                @if($workOrder->oilServices->isNotEmpty())
-                                                    {{ __('Recorded at') }}
+                                            {{-- Only a completed job proves the oil was actually changed, so the
+                                                 recorded figure is not shown before then. --}}
+                                            @if($workOrder->status === 'completed' && $workOrder->oilServices->isNotEmpty())
+                                                <p class="mt-3 text-sm text-green-800">
+                                                    {{ __('Oil service recorded at') }}
                                                     <strong>{{ number_format($workOrder->oilServices->first()->km) }} km</strong>
                                                     {{ __('on') }} {{ $workOrder->oilServices->first()->serviced_at->format('d.m.Y') }}.
-                                                @else
-                                                    {{ __('The oil service is recorded against this truck when the work order is completed.') }}
-                                                @endif
-                                            </p>
+                                                </p>
+                                            @else
+                                                <p class="mt-3 text-sm text-amber-800">
+                                                    {{ __('Planned oil service. It is recorded against this truck once the mechanic completes the job.') }}
+                                                </p>
+                                            @endif
                                         @endif
                                     @endif
                                 </div>

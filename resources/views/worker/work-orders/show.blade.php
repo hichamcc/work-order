@@ -75,14 +75,17 @@
                                             </dd>
 
                                             @if($workOrder->oil_service)
-                                                <dd class="mt-2 text-sm text-amber-800">
-                                                    @if($workOrder->oilServices->isNotEmpty())
+                                                {{-- Confirmed only once the job is finished. --}}
+                                                @if($workOrder->status === 'completed' && $workOrder->oilServices->isNotEmpty())
+                                                    <dd class="mt-2 text-sm text-green-800">
                                                         {{ __('Oil service recorded at') }}
                                                         <strong>{{ number_format($workOrder->oilServices->first()->km) }} km</strong>.
-                                                    @else
+                                                    </dd>
+                                                @else
+                                                    <dd class="mt-2 text-sm text-amber-800">
                                                         {{ __('Completing this job records the oil service for this truck.') }}
-                                                    @endif
-                                                </dd>
+                                                    </dd>
+                                                @endif
                                             @endif
                                         @endif
                                     </div>
