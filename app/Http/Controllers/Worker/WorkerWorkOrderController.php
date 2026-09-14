@@ -109,6 +109,7 @@ class WorkerWorkOrderController extends Controller
             'times',
             'comments.user',
             'oilServices',
+            'generalPhotos.uploader',
         ]);
 
         $activeTiming = $workOrder->times()

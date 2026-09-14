@@ -77,6 +77,14 @@ class WorkOrder extends Model
         return $this->hasMany(WorkOrderPhoto::class);
     }
 
+    /**
+     * Photos of the job itself, as opposed to evidence for a checklist item.
+     */
+    public function generalPhotos()
+    {
+        return $this->hasMany(WorkOrderPhoto::class)->whereNull('checklist_item_id');
+    }
+
     public function comments()
     {
         return $this->hasMany(WorkOrderComment::class);

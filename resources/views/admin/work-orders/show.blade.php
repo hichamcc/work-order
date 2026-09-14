@@ -335,6 +335,60 @@
                     </div>
                 </div>
 
+                    <!-- Job Photos -->
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                                {{ __('Job Photos') }}
+                                <span class="text-sm font-normal text-gray-500">
+                                    ({{ $workOrder->generalPhotos->count() }})
+                                </span>
+                            </h3>
+
+                            @forelse($workOrder->generalPhotos as $photo)
+                                @if($loop->first)
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                @endif
+
+                                <div class="relative group">
+                                    <a href="{{ Storage::url($photo->file_path) }}" target="_blank" rel="noopener">
+                                        <img src="{{ Storage::url($photo->file_path) }}"
+                                             alt="{{ $photo->description ?? 'Job photo' }}"
+                                             loading="lazy"
+                                             class="w-full h-32 object-cover rounded border border-gray-200">
+                                    </a>
+
+                                    @if($photo->description)
+                                        <p class="mt-1 text-xs text-gray-700 truncate" title="{{ $photo->description }}">
+                                            {{ $photo->description }}
+                                        </p>
+                                    @endif
+                                    <p class="text-xs text-gray-400">
+                                        {{ $photo->uploader->name ?? '—' }} · {{ $photo->created_at->format('d.m.Y H:i') }}
+                                    </p>
+
+                                    <form action="{{ route('admin.work-orders.photos.destroy', [$workOrder, $photo]) }}"
+                                          method="POST" class="absolute top-1 right-1"
+                                          onsubmit="return confirm('Remove this photo?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="opacity-0 group-hover:opacity-100 transition bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                                                title="{{ __('Remove') }}">&times;</button>
+                                    </form>
+                                </div>
+
+                                @if($loop->last)
+                                    </div>
+                                @endif
+                            @empty
+                                <p class="text-sm text-gray-500">
+                                    {{ __('The mechanic has not added any photos to this job.') }}
+                                </p>
+                            @endforelse
+                        </div>
+                    </div>
+
                     <!-- Comments -->
                     @include('admin.work-orders._partials._comments', ['comments' => $workOrder->comments])
                 </div>

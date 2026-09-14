@@ -195,6 +195,7 @@ class WorkOrderController extends Controller
             'times',
             'comments.user',
             'oilServices',
+            'generalPhotos.uploader',
         ]);
 
         return view('admin.work-orders.show', compact('workOrder'));

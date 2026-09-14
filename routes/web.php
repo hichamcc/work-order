@@ -93,6 +93,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/admin/work-orders/{workOrder}/toggle-invoice', [WorkOrderController::class, 'toggleInvoice'])->name('work-orders.toggle-invoice');
         Route::post('/work-orders/{workOrder}/add-part', [WorkOrderController::class, 'addPart'])
             ->name('work-orders.add-part');
+        Route::delete('/work-orders/{workOrder}/photos/{photo}', [\App\Http\Controllers\Worker\WorkOrderPhotoController::class, 'destroy'])
+            ->name('work-orders.photos.destroy');
         
         // Time Tracking Management
         Route::get('/work-orders/{workOrder}/times/edit', [WorkOrderController::class, 'editTimes'])
@@ -228,6 +230,7 @@ Route::middleware(['auth'])->group(function () {
             // Work Order Photos
             Route::controller(WorkOrderPhotoController::class)->group(function () {
                 Route::post('/work-orders/{workOrder}/photos', 'store')->name('work-orders.photos.store');
+                Route::delete('/work-orders/{workOrder}/photos/{photo}', 'destroy')->name('work-orders.photos.destroy');
             });
 
             // Work Order Comments

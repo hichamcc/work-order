@@ -609,6 +609,90 @@
                     checkSerialTracking();
                 });
             </script>
+            <!-- Job Photos -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold mb-4">Job Photos</h3>
+
+                    @if($workOrder->status !== 'completed')
+                        <form action="{{ route('worker.work-orders.photos.store', $workOrder) }}"
+                              method="POST" enctype="multipart/form-data" class="mb-6">
+                            @csrf
+
+                            <div class="space-y-3">
+                                <div>
+                                    <input type="file" name="photos[]" multiple required
+                                           accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
+                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        {{ __('Photos of parts you changed or used, or the work done. Up to 10 at a time, 5 MB each.') }}
+                                    </p>
+                                    <x-input-error :messages="$errors->get('photos')" class="mt-2" />
+                                    <x-input-error :messages="$errors->get('photos.0')" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <input type="text" name="description" maxlength="255"
+                                           value="{{ old('description') }}"
+                                           placeholder="{{ __('What do these show? e.g. new oil filter fitted') }}"
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm">
+                                    <x-input-error :messages="$errors->get('description')" class="mt-2" />
+                                </div>
+
+                                <button type="submit"
+                                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                    {{ __('Upload photos') }}
+                                </button>
+                            </div>
+                        </form>
+                    @endif
+
+                    @forelse($workOrder->generalPhotos as $photo)
+                        @if($loop->first)
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @endif
+
+                        <div class="relative group">
+                            <a href="{{ Storage::url($photo->file_path) }}" target="_blank" rel="noopener">
+                                <img src="{{ Storage::url($photo->file_path) }}"
+                                     alt="{{ $photo->description ?? 'Job photo' }}"
+                                     loading="lazy"
+                                     class="w-full h-32 object-cover rounded border border-gray-200">
+                            </a>
+
+                            @if($photo->description)
+                                <p class="mt-1 text-xs text-gray-700 truncate" title="{{ $photo->description }}">
+                                    {{ $photo->description }}
+                                </p>
+                            @endif
+                            <p class="text-xs text-gray-400">
+                                {{ $photo->uploader->name ?? '—' }} · {{ $photo->created_at->format('d.m.Y') }}
+                            </p>
+
+                            @if($workOrder->status !== 'completed' && $photo->uploaded_by === auth()->id())
+                                <form action="{{ route('worker.work-orders.photos.destroy', [$workOrder, $photo]) }}"
+                                      method="POST" class="absolute top-1 right-1"
+                                      onsubmit="return confirm('Remove this photo?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="opacity-0 group-hover:opacity-100 transition bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                                            title="{{ __('Remove') }}">&times;</button>
+                                </form>
+                            @endif
+                        </div>
+
+                        @if($loop->last)
+                            </div>
+                        @endif
+                    @empty
+                        <p class="text-sm text-gray-500">
+                            {{ __('No photos yet.') }}
+                        </p>
+                    @endforelse
+                </div>
+            </div>
+
             <!-- Comments Section -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
