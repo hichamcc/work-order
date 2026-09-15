@@ -472,11 +472,11 @@ class WorkerWorkOrderController extends Controller
 
 
 
-    public function create()
+    public function create(\App\Services\MaponService $mapon)
 {
     // For worker-created orders, we only need templates
     $templates = ServiceTemplate::where('is_active', true)->get();
-    
+
     // No need to pass workers since they can only assign to themselves
     // Optionally, you could load helpers they can select
     $potentialHelpers = User::whereHas('role', function($q) {
@@ -485,12 +485,39 @@ class WorkerWorkOrderController extends Controller
     ->where('id', '!=', auth()->id()) // Exclude themselves
     ->get();
 
-    return view('worker.work-orders.create', compact('templates', 'potentialHelpers'));
+    $trucks = $mapon->unitsForSelect();
+
+    return view('worker.work-orders.create', compact('templates', 'potentialHelpers', 'trucks'));
 }
 
-public function store(Request $request)
+    /**
+     * Live odometer lookup used by the create form when a truck is picked.
+     */
+    public function truckKm(Request $request, \App\Services\MaponService $mapon)
+    {
+        $validated = $request->validate([
+            'truck_number' => ['required', 'string', 'max:255'],
+        ]);
+
+        $reading = $mapon->readingForPlate($validated['truck_number'], $request->boolean('fresh'));
+
+        return response()->json([
+            'km' => $reading['km'],
+            'km_source' => $reading['source'],
+        ]);
+    }
+
+public function store(Request $request, \App\Services\MaponService $mapon)
 {
     try {
+        // Truck details only belong to truck jobs; drop anything left behind by
+        // switching the job type in the form.
+        if ($request->input('asset_type') !== 'truck') {
+            $request->merge(['truck_number' => null, 'truck_km' => null, 'oil_service' => false]);
+        }
+
+        $request->merge(['oil_service' => $request->boolean('oil_service')]);
+
         // Custom validation for worker creation
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -501,14 +528,32 @@ public function store(Request $request)
             'due_date' => 'nullable|date',
             'helpers' => 'nullable|array',
             'helpers.*' => 'exists:users,id',
+            'asset_type' => 'required|in:truck,trailer,other',
+            'truck_number' => 'nullable|required_if:asset_type,truck|string|max:255',
+            'truck_km' => 'nullable|required_if:asset_type,truck|integer|min:0|max:9999999',
+            'oil_service' => 'nullable|boolean',
+        ], [
+            'asset_type.required' => 'Please select whether this job is for a truck, trailer or other.',
+            'truck_number.required_if' => 'Please select the truck number.',
+            'truck_km.required_if' => 'Please provide the truck KM.',
         ]);
-        
+
         DB::beginTransaction();
-        
+
         // Extract helpers from the validated data if they exist
         $helpers = $validated['helpers'] ?? [];
         unset($validated['helpers']);
-        
+
+        // Record where the KM came from: an untouched Mapon reading, or a
+        // figure the mechanic typed over it.
+        if ($validated['asset_type'] === 'truck') {
+            $reading = $mapon->readingForPlate($validated['truck_number']);
+
+            $validated['truck_km_source'] = ($reading['km'] !== null && (int) $validated['truck_km'] === $reading['km'])
+                ? $reading['source']
+                : 'manual';
+        }
+
         // Create work order with worker as the assigned_to
         $workOrder = WorkOrder::create([
             ...$validated,
@@ -516,6 +561,15 @@ public function store(Request $request)
             'created_by' => auth()->id(),
             'status' => 'new', // Or you could set it to 'in_progress' directly
         ]);
+
+        // Link the truck's open alert so the oil service list shows this job as
+        // already dealt with. The service itself is recorded on completion.
+        if ($workOrder->isTruck() && $workOrder->oil_service) {
+            \App\Models\TruckServiceAlert::open()
+                ->where('truck_number', $workOrder->truck_number)
+                ->whereNull('work_order_id')
+                ->update(['work_order_id' => $workOrder->id]);
+        }
 
         // If a service template is selected, copy its checklist items
         if ($request->filled('service_template_id')) {

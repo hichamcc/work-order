@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\TruckServiceStatusController;
 use App\Models\Part;
 use App\Models\PartInstance;
 
@@ -18,6 +19,16 @@ use App\Models\PartInstance;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Oil service status for other systems, e.g. colouring truck numbers on the
+// delivery site. Read-only and guarded by a shared token.
+Route::middleware('api.token')->prefix('trucks')->group(function () {
+    Route::get('/service-status', [TruckServiceStatusController::class, 'index'])
+        ->name('api.trucks.service-status');
+    Route::get('/service-status/{truckNumber}', [TruckServiceStatusController::class, 'show'])
+        ->where('truckNumber', '.*')
+        ->name('api.trucks.service-status.show');
 });
 
 // Parts API routes

@@ -199,6 +199,7 @@ Route::middleware(['auth'])->group(function () {
             Route::controller(WorkerWorkOrderController::class)->group(function () {
                 Route::get('/work-orders', 'index')->name('work-orders.index');
                 Route::get('/work-orders/create', 'create')->name('work-orders.create');
+                Route::get('/work-orders/truck-km', 'truckKm')->name('work-orders.truck-km');
                 Route::post('/work-orders', 'store')->name('work-orders.store');
                 Route::get('/work-orders/{workOrder}', 'show')->name('work-orders.show');
             });

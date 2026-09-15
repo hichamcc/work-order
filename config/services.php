@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'integration' => [
+        // Shared secret for server-to-server API calls from other systems.
+        'token' => env('INTEGRATION_API_TOKEN'),
+    ],
+
     'mapon' => [
         'key' => env('MAPON_API_KEY'),
         'base_url' => env('MAPON_BASE_URL', 'https://mapon.com/api/v1'),
