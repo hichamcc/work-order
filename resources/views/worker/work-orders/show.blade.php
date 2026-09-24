@@ -392,10 +392,28 @@
                             <div id="serialSelectionSection" class="mt-4 p-4 border border-gray-200 rounded-md hidden">
                                 <h4 class="font-medium mb-2">Select Serial Numbers</h4>
                                 <p class="text-sm text-gray-600 mb-3">Please select <span id="requiredCount">1</span> serial number(s):</p>
-                                
+
+                                {{-- Typing or scanning a serial filters the list below. A hardware
+                                     scanner types the serial and presses Enter, which ticks an exact
+                                     match straight away. --}}
+                                <div class="mb-3">
+                                    <input type="text" id="serialSearch" autocomplete="off"
+                                           placeholder="Search or scan serial number..."
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm">
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        <span id="serialMatchCount"></span>
+                                    </p>
+                                </div>
+
                                 <div id="serialNumbersList" class="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                                     <!-- Serial numbers will be loaded here via AJAX -->
                                     <div class="text-gray-500 italic">Loading available serial numbers...</div>
+                                </div>
+
+                                {{-- Ticked serials stay visible even when filtered out of the list. --}}
+                                <div id="serialSelectedSummary" class="mt-3 text-sm text-gray-700 hidden">
+                                    <span class="font-medium">Selected:</span>
+                                    <span id="serialSelectedList"></span>
                                 </div>
                             </div>
                         </form>
@@ -553,14 +571,23 @@
                             });
                             
                             serialsList.innerHTML = html;
-                            
+
                             // Set up event listeners for checkboxes
                             const checkboxes = document.querySelectorAll('.serial-checkbox');
                             checkboxes.forEach(checkbox => {
                                 checkbox.addEventListener('change', function() {
                                     enforceSelectionLimit(quantity);
+                                    updateSelectedSummary();
                                 });
                             });
+
+                            // A fresh list means any previous filter no longer applies.
+                            const search = document.getElementById('serialSearch');
+                            if (search) {
+                                search.value = '';
+                            }
+                            filterSerials();
+                            updateSelectedSummary();
                         })
                         .catch(error => {
                             console.error('Error loading serial numbers:', error);
@@ -568,6 +595,100 @@
                         });
                 }
                 
+                // Show only the serials matching what has been typed or scanned.
+                function filterSerials() {
+                    const search = document.getElementById('serialSearch');
+                    const countLabel = document.getElementById('serialMatchCount');
+
+                    if (!search) {
+                        return;
+                    }
+
+                    const term = search.value.trim().toUpperCase();
+                    const rows = document.querySelectorAll('#serialNumbersList > div');
+                    let visible = 0;
+
+                    rows.forEach(row => {
+                        const label = row.querySelector('label');
+
+                        if (!label) {
+                            return;
+                        }
+
+                        const checkbox = row.querySelector('.serial-checkbox');
+                        // A ticked serial stays visible so it cannot be lost behind a filter.
+                        const matches = term === ''
+                            || label.textContent.trim().toUpperCase().includes(term)
+                            || (checkbox && checkbox.checked);
+
+                        row.classList.toggle('hidden', !matches);
+
+                        if (matches) {
+                            visible++;
+                        }
+                    });
+
+                    if (countLabel) {
+                        countLabel.textContent = term === ''
+                            ? ''
+                            : `${visible} matching`;
+                    }
+                }
+
+                // A scanner types the serial then sends Enter; tick an exact match.
+                function selectExactSerial() {
+                    const search = document.getElementById('serialSearch');
+                    const term = search.value.trim().toUpperCase();
+
+                    if (term === '') {
+                        return;
+                    }
+
+                    const rows = document.querySelectorAll('#serialNumbersList > div');
+
+                    for (const row of rows) {
+                        const label = row.querySelector('label');
+                        const checkbox = row.querySelector('.serial-checkbox');
+
+                        if (!label || !checkbox) {
+                            continue;
+                        }
+
+                        if (label.textContent.trim().toUpperCase() === term) {
+                            if (!checkbox.checked) {
+                                checkbox.checked = true;
+                                enforceSelectionLimit(parseInt(document.getElementById('quantity').value));
+                                updateSelectedSummary();
+                            }
+
+                            // Clear ready for the next scan.
+                            search.value = '';
+                            filterSerials();
+                            return;
+                        }
+                    }
+                }
+
+                // Keep the chosen serials listed, even when the filter hides them.
+                function updateSelectedSummary() {
+                    const summary = document.getElementById('serialSelectedSummary');
+                    const list = document.getElementById('serialSelectedList');
+
+                    if (!summary || !list) {
+                        return;
+                    }
+
+                    const chosen = Array.from(document.querySelectorAll('.serial-checkbox:checked'))
+                        .map(checkbox => {
+                            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+                            return label ? label.textContent.trim() : '';
+                        })
+                        .filter(Boolean);
+
+                    list.textContent = chosen.join(', ');
+                    summary.classList.toggle('hidden', chosen.length === 0);
+                }
+
                 function enforceSelectionLimit(limit) {
                     const checkboxes = document.querySelectorAll('.serial-checkbox:checked');
                     
@@ -607,6 +728,20 @@
                 // Initialize on page load
                 document.addEventListener('DOMContentLoaded', function() {
                     checkSerialTracking();
+
+                    const serialSearch = document.getElementById('serialSearch');
+
+                    if (serialSearch) {
+                        serialSearch.addEventListener('input', filterSerials);
+
+                        serialSearch.addEventListener('keydown', function(event) {
+                            if (event.key === 'Enter') {
+                                // Stop a scanner's trailing Enter from submitting the form.
+                                event.preventDefault();
+                                selectExactSerial();
+                            }
+                        });
+                    }
                 });
             </script>
             <!-- Job Photos -->
