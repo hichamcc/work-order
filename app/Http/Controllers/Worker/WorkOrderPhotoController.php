@@ -14,7 +14,15 @@ class WorkOrderPhotoController extends Controller
     /**
      * Largest image accepted, in kilobytes.
      */
-    const MAX_SIZE_KB = 5120;
+    const MAX_SIZE_KB = 10240;
+
+    /**
+     * Photos per upload.
+     *
+     * Kept so a full batch stays under PHP's post_max_size (100M by default);
+     * beyond that the request is discarded before the application sees it.
+     */
+    const MAX_PER_UPLOAD = 8;
 
     /**
      * Attach photos to the job itself, rather than to a checklist item.
@@ -30,15 +38,22 @@ class WorkOrderPhotoController extends Controller
             return back()->with('error', 'This work order is completed; photos can no longer be added.');
         }
 
+        // PHP discards a POST larger than post_max_size before it reaches here,
+        // leaving an empty request rather than a validation error. Say so plainly
+        // instead of reporting "no photos chosen".
+        if ($request->server('CONTENT_LENGTH') > 0 && empty($request->all()) && empty($request->allFiles())) {
+            return back()->with('error', 'That upload was too large in total. Please add fewer photos at a time.');
+        }
+
         $validated = $request->validate([
-            'photos' => ['required', 'array', 'max:10'],
+            'photos' => ['required', 'array', 'max:'.self::MAX_PER_UPLOAD],
             'photos.*' => ['image', 'mimes:jpeg,jpg,png,heic,heif,webp', 'max:'.self::MAX_SIZE_KB],
             'description' => ['nullable', 'string', 'max:255'],
         ], [
             'photos.required' => 'Please choose at least one photo.',
             'photos.*.image' => 'Only image files can be uploaded.',
-            'photos.*.max' => 'Each photo must be 5 MB or smaller.',
-            'photos.max' => 'You can upload up to 10 photos at a time.',
+            'photos.*.max' => 'Each photo must be 10 MB or smaller.',
+            'photos.max' => 'You can upload up to '.self::MAX_PER_UPLOAD.' photos at a time.',
         ]);
 
         try {

@@ -625,7 +625,9 @@
                                            accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
                                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                                     <p class="mt-1 text-xs text-gray-500">
-                                        {{ __('Photos of parts you changed or used, or the work done. Up to 10 at a time, 5 MB each.') }}
+                                        {{ __('Photos of parts you changed or used, or the work done. Up to') }}
+                                        {{ \App\Http\Controllers\Worker\WorkOrderPhotoController::MAX_PER_UPLOAD }}
+                                        {{ __('at a time, 10 MB each.') }}
                                     </p>
                                     <x-input-error :messages="$errors->get('photos')" class="mt-2" />
                                     <x-input-error :messages="$errors->get('photos.0')" class="mt-2" />
