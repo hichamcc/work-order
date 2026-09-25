@@ -22,10 +22,10 @@ class StoreWorkOrderRequest extends FormRequest
             'helpers' => 'nullable|array',
             'helpers.*' => 'exists:users,id',
             'priority' => ['required', 'in:low,medium,high,urgent'],
+            // Past dates are allowed: work is sometimes entered after it was done.
             'due_date' => [
                 'nullable',
                 'date',
-                'after_or_equal:today'
             ],
             'asset_type' => ['required', 'in:truck,trailer,other'],
             'truck_number' => ['nullable', 'required_if:asset_type,truck', 'string', 'max:255'],
@@ -45,7 +45,6 @@ class StoreWorkOrderRequest extends FormRequest
             'assigned_to.exists' => 'The selected worker is invalid.',
             'priority.required' => 'Please select a priority level.',
             'priority.in' => 'The selected priority is invalid.',
-            'due_date.after_or_equal' => 'The due date must be today or a future date.',
             'service_template_id.exists' => 'The selected service template is invalid.',
             'asset_type.required' => 'Please select whether this job is for a truck, trailer or other.',
             'asset_type.in' => 'The selected job type is invalid.',

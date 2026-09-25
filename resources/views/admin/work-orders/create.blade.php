@@ -364,17 +364,8 @@
                 isValid = false;
             }
 
-            // Due date validation
-            if (this.$refs.due_date.value) {
-                const selectedDate = new Date(this.$refs.due_date.value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                if (selectedDate < today) {
-                    this.errors.due_date = 'The due date must be today or a future date.';
-                    isValid = false;
-                }
-            }
+            // The due date may be in the past: work is sometimes entered into the
+            // system after it was carried out.
 
             return isValid;
         },
