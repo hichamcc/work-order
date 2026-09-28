@@ -352,9 +352,32 @@ class PartController extends Controller
         {
             $serialIds = explode(',', $request->serials);
             $serialInstances = PartInstance::whereIn('id', $serialIds)->get();
-            
+
             return view('admin.parts.print-barcodes', compact('part', 'serialInstances'));
         }
+
+    /**
+     * Printable labels for a part that is not serial tracked.
+     *
+     * Every label carries the same part number, since there is nothing to tell
+     * one unit from another; the quantity is simply how many are needed.
+     */
+    public function printPartBarcode(Request $request, Part $part)
+    {
+        if ($part->track_serials) {
+            return redirect()
+                ->route('admin.parts.index')
+                ->with('error', 'This part is serial tracked; print barcodes from its serial numbers instead.');
+        }
+
+        $validated = $request->validate([
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:200'],
+        ]);
+
+        $quantity = $validated['quantity'] ?? 1;
+
+        return view('admin.parts.print-part-barcode', compact('part', 'quantity'));
+    }
 
 
 

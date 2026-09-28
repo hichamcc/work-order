@@ -158,6 +158,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('{part}/print-barcodes', [PartController::class, 'printBarcodes'])
             ->name('print-barcodes');
 
+            // Labels for a part that is not serial tracked, all showing the part number.
+            Route::get('{part}/print-part-barcode', [PartController::class, 'printPartBarcode'])
+            ->name('print-part-barcode');
+
         });
 
        

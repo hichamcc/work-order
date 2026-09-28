@@ -178,11 +178,18 @@
                                             </button>
                                             
                                             @if($part->track_serials)
-                                            <button type="button" 
+                                            <button type="button"
                                             onclick="Livewire.dispatch('openModal', { component: 'parts.print-barcodes', arguments: { partId: {{ $part->id }} }})"
                                             class="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md">
                                                 Print Barcodes
                                             </button>
+                                            @else
+                                            {{-- Untracked units are interchangeable, so the label carries the part number. --}}
+                                            <a href="{{ route('admin.parts.print-part-barcode', $part) }}"
+                                               target="_blank"
+                                               class="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md">
+                                                Print Barcode
+                                            </a>
                                             @endif
 
                                             <form action="{{ route('admin.parts.toggle-status', $part) }}" 
