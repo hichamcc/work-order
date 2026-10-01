@@ -356,15 +356,34 @@
                         <!-- Add Part Form -->
                         <form action="{{ route('worker.work-orders.add-part', $workOrder) }}" method="POST" class="mb-6" id="addPartForm">
                             @csrf
+                            {{-- Typing or scanning a part number filters the list below. A
+                                 hardware scanner types the number and presses Enter, which
+                                 selects an exact match straight away. --}}
+                            <div class="mb-4 relative">
+                                <input type="text" id="partSearch" autocomplete="off"
+                                       placeholder="Search or scan part number / name..."
+                                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+
+                                {{-- Results are picked straight from here, so the dropdown
+                                     below never has to be opened. --}}
+                                <div id="partResults"
+                                     class="hidden absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-72 overflow-y-auto">
+                                </div>
+
+                                <p class="mt-1 text-xs text-gray-500" id="partMatchCount"></p>
+                            </div>
+
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div class="col-span-2">
                                     <select name="part_id" id="part_id" required class="w-full rounded-md border-gray-300" onchange="checkSerialTracking()">
                                         <option value="">Select Part</option>
                                         @foreach($parts as $part)
-                                            <option value="{{ $part->id }}" 
+                                            <option value="{{ $part->id }}"
                                                     data-serialized="{{ $part->track_serials ? 'true' : 'false' }}"
-                                                    data-stock="{{ $part->stock }}">
-                                                {{ $part->name }} ({{ $part->stock }} in stock)
+                                                    data-stock="{{ $part->stock }}"
+                                                    data-part-number="{{ $part->part_number }}"
+                                                    data-name="{{ $part->name }}">
+                                                {{ $part->part_number }} — {{ $part->name }} ({{ $part->stock }} in stock)
                                                 @if($part->track_serials) [Serial Tracked] @endif
                                             </option>
                                         @endforeach
@@ -595,6 +614,164 @@
                         });
                 }
                 
+                // Every part option as rendered, so filtering can rebuild the list.
+                // Browsers disagree about hiding <option> elements, so the ones that
+                // do not match are removed and put back rather than hidden.
+                let allPartOptions = [];
+
+                function capturePartOptions() {
+                    const select = document.getElementById('part_id');
+
+                    if (select && allPartOptions.length === 0) {
+                        allPartOptions = Array.from(select.options)
+                            .filter(option => option.value !== '');
+                    }
+                }
+
+                // Render the matches as a clickable list under the search box, so a
+                // part is chosen in one action rather than opening the dropdown.
+                function filterParts() {
+                    const search = document.getElementById('partSearch');
+                    const results = document.getElementById('partResults');
+                    const countLabel = document.getElementById('partMatchCount');
+
+                    if (!search || !results) {
+                        return;
+                    }
+
+                    capturePartOptions();
+
+                    const term = search.value.trim().toUpperCase();
+
+                    if (term === '') {
+                        hidePartResults();
+                        return;
+                    }
+
+                    const matching = allPartOptions.filter(option => {
+                        const number = (option.dataset.partNumber || '').toUpperCase();
+                        const name = (option.dataset.name || '').toUpperCase();
+
+                        return number.includes(term) || name.includes(term);
+                    });
+
+                    results.innerHTML = '';
+
+                    if (matching.length === 0) {
+                        const empty = document.createElement('div');
+                        empty.className = 'px-3 py-2 text-sm text-gray-500 italic';
+                        empty.textContent = 'No matching parts';
+                        results.appendChild(empty);
+                    }
+
+                    matching.forEach(option => {
+                        const row = document.createElement('button');
+                        row.type = 'button';
+                        row.className = 'w-full text-left px-3 py-2 hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none border-b border-gray-100 last:border-b-0';
+                        row.dataset.partId = option.value;
+
+                        const stock = option.dataset.stock || '0';
+                        const serialised = option.dataset.serialized === 'true';
+
+                        row.innerHTML = `
+                            <span class="block text-sm font-medium text-gray-900">
+                                ${option.dataset.partNumber || ''} — ${option.dataset.name || ''}
+                            </span>
+                            <span class="block text-xs text-gray-500">
+                                ${stock} in stock${serialised ? ' · serial tracked' : ''}
+                            </span>`;
+
+                        row.addEventListener('click', function() {
+                            choosePart(option.value);
+                        });
+
+                        results.appendChild(row);
+                    });
+
+                    results.classList.remove('hidden');
+
+                    if (countLabel) {
+                        countLabel.textContent = `${matching.length} matching`;
+                    }
+                }
+
+                function hidePartResults() {
+                    const results = document.getElementById('partResults');
+                    const countLabel = document.getElementById('partMatchCount');
+
+                    if (results) {
+                        results.classList.add('hidden');
+                        results.innerHTML = '';
+                    }
+
+                    if (countLabel) {
+                        countLabel.textContent = '';
+                    }
+                }
+
+                // One action picks the part: set the dropdown and move to quantity.
+                function choosePart(partId) {
+                    const select = document.getElementById('part_id');
+                    const search = document.getElementById('partSearch');
+
+                    if (!select) {
+                        return;
+                    }
+
+                    select.value = partId;
+                    checkSerialTracking();
+
+                    if (search) {
+                        search.value = '';
+                    }
+
+                    hidePartResults();
+
+                    const quantity = document.getElementById('quantity');
+                    if (quantity) {
+                        quantity.focus();
+                        quantity.select();
+                    }
+                }
+
+                // Enter picks the part: an exact part number, as a scanner sends, or
+                // the only remaining match when someone has typed enough to narrow it.
+                function selectExactPart() {
+                    const search = document.getElementById('partSearch');
+
+                    if (!search) {
+                        return;
+                    }
+
+                    capturePartOptions();
+
+                    const term = search.value.trim().toUpperCase();
+
+                    if (term === '') {
+                        return;
+                    }
+
+                    const exact = allPartOptions.find(
+                        option => (option.dataset.partNumber || '').toUpperCase() === term
+                    );
+
+                    if (exact) {
+                        choosePart(exact.value);
+                        return;
+                    }
+
+                    const matching = allPartOptions.filter(option => {
+                        const number = (option.dataset.partNumber || '').toUpperCase();
+                        const name = (option.dataset.name || '').toUpperCase();
+
+                        return number.includes(term) || name.includes(term);
+                    });
+
+                    if (matching.length === 1) {
+                        choosePart(matching[0].value);
+                    }
+                }
+
                 // Show only the serials matching what has been typed or scanned.
                 function filterSerials() {
                     const search = document.getElementById('serialSearch');
@@ -728,6 +905,33 @@
                 // Initialize on page load
                 document.addEventListener('DOMContentLoaded', function() {
                     checkSerialTracking();
+                    capturePartOptions();
+
+                    const partSearch = document.getElementById('partSearch');
+
+                    if (partSearch) {
+                        partSearch.addEventListener('input', filterParts);
+
+                        partSearch.addEventListener('keydown', function(event) {
+                            if (event.key === 'Enter') {
+                                // Stop a scanner's trailing Enter from submitting the form.
+                                event.preventDefault();
+                                selectExactPart();
+                            }
+
+                            if (event.key === 'Escape') {
+                                partSearch.value = '';
+                                hidePartResults();
+                            }
+                        });
+
+                        // Clicking elsewhere closes the results.
+                        document.addEventListener('click', function(event) {
+                            if (!event.target.closest('#partSearch') && !event.target.closest('#partResults')) {
+                                hidePartResults();
+                            }
+                        });
+                    }
 
                     const serialSearch = document.getElementById('serialSearch');
 
