@@ -74,8 +74,9 @@ class WorkOrderController extends Controller
         // Badge on the oil service link: only trucks already past their point,
         // so it reflects work that is actually outstanding.
         $serviceDueCount = TruckServiceAlert::open()->overdue()->count();
+        $trailerServiceCount = \App\Models\Trailer::active()->needingService()->count();
 
-        return view('admin.work-orders.index', compact('workOrders', 'workers' , 'customers', 'serviceDueCount'));
+        return view('admin.work-orders.index', compact('workOrders', 'workers' , 'customers', 'serviceDueCount', 'trailerServiceCount'));
     }
 
     public function create(MaponService $mapon)

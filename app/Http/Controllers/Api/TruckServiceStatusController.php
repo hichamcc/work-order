@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Trailer;
 use App\Models\TruckServiceAlert;
 use App\Services\MaponService;
 use Illuminate\Http\Request;
@@ -33,12 +34,31 @@ class TruckServiceStatusController extends Controller
             ->when($onlyFlagged, fn ($items) => $items->filter(fn ($item) => $item['colour'] !== null))
             ->keyBy('truck_number');
 
+        // Trailers carry no mileage, so they are either flagged or they are not.
+        $trailers = Trailer::active()
+            ->when($onlyFlagged, fn ($query) => $query->needingService())
+            ->orderBy('plate_number')
+            ->get()
+            ->map(fn (Trailer $trailer) => [
+                'plate_number' => $trailer->plate_number,
+                'label' => $trailer->label,
+                'tracked' => true,
+                'state' => $trailer->needs_service ? 'needs_service' : 'ok',
+                'colour' => $trailer->needs_service ? 'red' : null,
+                'note' => $trailer->service_note,
+                'flagged_at' => $trailer->flagged_at?->toIso8601String(),
+                'last_serviced_at' => $trailer->last_serviced_at?->toIso8601String(),
+            ])
+            ->keyBy('plate_number');
+
         return response()->json([
             'generated_at' => now()->toIso8601String(),
             'interval_km' => (int) config('services.mapon.oil_service_interval_km', 120000),
             'due_soon_km' => TruckServiceAlert::DUE_SOON_KM,
             'count' => $trucks->count(),
             'trucks' => $trucks,
+            'trailer_count' => $trailers->count(),
+            'trailers' => $trailers,
         ]);
     }
 

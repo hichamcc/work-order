@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\PartController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\TruckServiceController;
+use App\Http\Controllers\Admin\TrailerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\Settings\CategoryController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
@@ -59,6 +60,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/trucks/alerts/{alert}/complete', [TruckServiceController::class, 'complete'])
         ->name('trucks.alerts.complete');
 
+    // Same rule as trucks: admins, or the worker the linked job belongs to.
+    Route::post('/trailers/{trailer}/complete', [TrailerController::class, 'complete'])
+        ->name('trailers.complete');
+
     // Profile routes (from Breeze)
 
 
@@ -80,6 +85,16 @@ Route::middleware(['auth'])->group(function () {
             ->name('trucks.alerts.assign');
         Route::patch('/trucks/alerts/{alert}', [TruckServiceController::class, 'update'])
             ->name('trucks.alerts.update');
+
+        // Trailers. Mapon has no trailer mileage, so these are flagged by hand.
+        Route::get('/trailers', [TrailerController::class, 'index'])
+            ->name('trailers.index');
+        Route::get('/trailers/history', [TrailerController::class, 'history'])
+            ->name('trailers.history');
+        Route::post('/trailers/{trailer}/flag', [TrailerController::class, 'flag'])
+            ->name('trailers.flag');
+        Route::post('/trailers/{trailer}/assign', [TrailerController::class, 'assign'])
+            ->name('trailers.assign');
 
         // Work Orders
         // Registered before the resource so it is not matched as work-orders/{workOrder}.
